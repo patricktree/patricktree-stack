@@ -1,5 +1,13 @@
 # @pkerschbaum/fetch-favicon
 
+## 1.0.1
+
+### Patch Changes
+
+- 180ffcb: chore: change "binary.utils.ts" to "binary.ts"
+- Updated dependencies [180ffcb]
+  - @pkerschbaum/commons-node@1.0.1
+
 ## 1.0.0
 
 ### Major Changes
