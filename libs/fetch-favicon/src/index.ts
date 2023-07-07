@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { arrays } from '@pkerschbaum/commons-ecma/util/arrays';
 import { check } from '@pkerschbaum/commons-ecma/util/assert';
-import { binaryUtils } from '@pkerschbaum/commons-node/utils/binary.utils';
+import { binaryUtils } from '@pkerschbaum/commons-node/utils/binary';
 
 import { fetchFaviconURLs } from '#pkg/favicon.js';
 
