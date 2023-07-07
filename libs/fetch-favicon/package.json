@@ -1,8 +1,20 @@
 {
   "name": "@pkerschbaum/fetch-favicon",
-  "private": true,
-  "type": "module",
+  "license": "MIT",
+  "author": "Patrick Kerschbaum <patrick.kerschbaum@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pkerschbaum/packages",
+    "directory": "packages/fetch-favicon"
+  },
+  "bugs": {
+    "url": "https://github.com/pkerschbaum/packages/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "version": "0.0.1",
+  "type": "module",
   "exports": {
     ".": "./dist/index.js",
     "./*": "./dist/*.js"
