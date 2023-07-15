@@ -1,5 +1,11 @@
 # @pkerschbaum/fetch-favicon
 
+## 1.0.2
+
+### Patch Changes
+
+- ad5aa11: fix(fetch-favicon): move playwright to peerDependencies so that consumers install playwright (and thus the browsers needed for it)
+
 ## 1.0.1
 
 ### Patch Changes
