@@ -33,7 +33,6 @@
   ],
   "scripts": {
     "prepare": "ts-patch install -s",
-    "postinstall": "playwright install",
     "internal:compile": "tsc -p ./tsconfig.project.json",
     "nuke": "pnpm run nuke:artifacts && del-cli node_modules",
     "nuke:artifacts": "del-cli dist *.tsbuildinfo",
