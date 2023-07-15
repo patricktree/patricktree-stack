@@ -1,5 +1,11 @@
 # @pkerschbaum/fetch-favicon
 
+## 1.0.3
+
+### Patch Changes
+
+- abd03c0: fix(fetch-favicon): remove postinstall
+
 ## 1.0.2
 
 ### Patch Changes
