@@ -25,13 +25,13 @@ export const schema_faviconsForWebsites = z.object({
 });
 export type FaviconsForWebsites = z.infer<typeof schema_faviconsForWebsites>;
 
-export async function fetchFavicons(hrefsOfAllPosts: string[]): Promise<FaviconsForWebsites> {
+export async function fetchFavicons(hrefs: string[]): Promise<FaviconsForWebsites> {
   // Preparation: start browser
   const browser = await initializeBrowserInstance();
 
   // Step #1: Use puppeteer to go to every href and fetch the URLs for both its light favicon and dark favicon
   const websites: FaviconsForWebsites['websites'] = {};
-  for (const href of hrefsOfAllPosts) {
+  for (const href of hrefs) {
     // we fetch favicon URLs one after another so that we do not overwhelm the pptr browser instance
     const faviconURLs = await fetchFaviconURLs(new URL(href), { browser });
     websites[href] = {
