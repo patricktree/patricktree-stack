@@ -1,5 +1,13 @@
 # @pkerschbaum/fetch-favicon
 
+## 1.0.6
+
+### Patch Changes
+
+- Updated dependencies [8aa8641]
+  - @pkerschbaum/commons-ecma@2.1.1
+  - @pkerschbaum/commons-node@2.1.1
+
 ## 1.0.5
 
 ### Patch Changes
