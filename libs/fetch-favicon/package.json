@@ -48,8 +48,6 @@
     "zod": "^3.22.2"
   },
   "devDependencies": {
-    "@pkerschbaum/config-eslint": "workspace:^",
-    "@pkerschbaum/config-typescript": "workspace:^",
     "@types/node": "^18",
     "@typescript-eslint/eslint-plugin": "^6.7.3",
     "@typescript-eslint/parser": "^6.7.3",
