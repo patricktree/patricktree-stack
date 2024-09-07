@@ -41,10 +41,10 @@ async function gotoPageAndExtractFaviconURLFromPage(page: playwright.Page, websi
     timeout: PUPPETEER_NAVIGATION_TIMEOUT,
   });
 
-  const relativeIconURL: unknown = await page
+  const relativeIconURL = await page
     .$("link[rel='icon']")
     .then(async (handle) => handle?.getProperty('href'))
-    .then(async (jsHandle) => jsHandle?.jsonValue());
+    .then(async (jsHandle) => jsHandle?.jsonValue() as Promise<unknown>);
 
   const absoluteIconURL =
     typeof relativeIconURL === 'string'
