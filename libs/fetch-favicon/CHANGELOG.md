@@ -1,5 +1,15 @@
 # @pkerschbaum/fetch-favicon
 
+## 1.0.8
+
+### Patch Changes
+
+- f43b99b: chore(deps): bump all deps to latest and apply ESLint fixes
+- Updated dependencies [aff99e2]
+- Updated dependencies [f43b99b]
+  - @pkerschbaum/commons-node@2.2.0
+  - @pkerschbaum/commons-ecma@2.4.1
+
 ## 1.0.7
 
 ### Patch Changes
