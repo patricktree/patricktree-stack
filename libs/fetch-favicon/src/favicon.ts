@@ -13,7 +13,7 @@ export async function fetchFaviconURLs(
   website: URL,
   options: FetchFaviconURLsOptions,
 ): Promise<FetchFaviconURLsResult> {
-  // Open two pages, one for light/dark color scheme each
+  console.log('Opening two pages (one for light/dark color scheme each)');
   async function createPage(colorScheme: 'light' | 'dark') {
     const context = await options.browser.newContext({ colorScheme, ignoreHTTPSErrors: true });
     const page = await context.newPage();
@@ -22,20 +22,20 @@ export async function fetchFaviconURLs(
 
   const [pageLight, pageDark] = await Promise.all([createPage('light'), createPage('dark')]);
 
-  // Fetch URLs of Favicons in parallel
+  console.log('Fetching URLs of Favicons in parallel');
   const [light, dark] = await Promise.all([
     gotoPageAndExtractFaviconURLFromPage(pageLight, website),
     gotoPageAndExtractFaviconURLFromPage(pageDark, website),
   ]);
 
-  // Close the pages
+  console.log('Closing the pages');
   await Promise.all([pageLight.close(), pageDark.close()]);
 
   return { icons: { light, dark } };
 }
 
 async function gotoPageAndExtractFaviconURLFromPage(page: playwright.Page, website: URL) {
-  // Goto given url
+  console.log(`Going to URL ${website.href}`);
   await page.goto(website.href, {
     waitUntil: 'load',
     timeout: PUPPETEER_NAVIGATION_TIMEOUT,

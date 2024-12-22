@@ -26,13 +26,15 @@ export const schema_faviconsForWebsites = z.object({
 export type FaviconsForWebsites = z.infer<typeof schema_faviconsForWebsites>;
 
 export async function fetchFavicons(hrefs: string[]): Promise<FaviconsForWebsites> {
-  // Preparation: start browser
+  console.log('Preparation: start browser');
   const browser = await initializeBrowserInstance();
 
-  // Step #1: Use puppeteer to go to every href and fetch the URLs for both its light favicon and dark favicon
+  console.log(
+    'Step #1: Use puppeteer to go to every href and fetch the URLs for both its light favicon and dark favicon',
+  );
   const websites: FaviconsForWebsites['websites'] = {};
   for (const href of hrefs) {
-    // we fetch favicon URLs one after another so that we do not overwhelm the pptr browser instance
+    console.log(`Fetching favicon URLs for ${href}`);
     const faviconURLs = await fetchFaviconURLs(new URL(href), { browser });
     websites[href] = {
       iconURLs: {
@@ -42,7 +44,7 @@ export async function fetchFavicons(hrefs: string[]): Promise<FaviconsForWebsite
     };
   }
 
-  // Step #2: Gather a list of favicon URLs we need to fetch (with duplicates removed)
+  console.log('Step #2: Gather a list of favicon URLs we need to fetch (with duplicates removed)');
   let allIconURLs: URL[] = [];
   for (const entry of Object.values(websites)) {
     invariant(entry);
@@ -55,10 +57,11 @@ export async function fetchFavicons(hrefs: string[]): Promise<FaviconsForWebsite
   }
   allIconURLs = arrays.uniqueValues(allIconURLs);
 
-  // Step #3: Go to every favicon URL and store the favicon as a data URL
+  console.log('Step #3: Go to every favicon URL and store the favicon as a data URL');
   const icons: FaviconsForWebsites['icons'] = {};
   await Promise.all(
     allIconURLs.map(async (url) => {
+      console.log(`Fetching favicon from ${url.href}`);
       const response = await fetchUrl(url);
       const blob = await response.blob();
       const dataURL = await binaryUtils.convertBlobToDataURL(blob);
@@ -66,7 +69,7 @@ export async function fetchFavicons(hrefs: string[]): Promise<FaviconsForWebsite
     }),
   );
 
-  // Step #4: Close the puppeteer browser and return the favicons
+  console.log('Step #4: Close the puppeteer browser');
   await browser.close();
   return {
     websites,
@@ -75,6 +78,7 @@ export async function fetchFavicons(hrefs: string[]): Promise<FaviconsForWebsite
 }
 
 async function initializeBrowserInstance() {
+  console.log('Initializing browser instance');
   const launchOptions: playwright.LaunchOptions = {
     headless: true,
     args: ['--no-sandbox'],
@@ -83,19 +87,23 @@ async function initializeBrowserInstance() {
 }
 
 async function fetchUrl(url: URL): Promise<Response> {
+  console.log(`Fetching URL: ${url.href}`);
   let attempts = 1;
   let response;
   while (attempts <= 3 && !response) {
     try {
+      console.log(`Attempt ${attempts} for ${url.href}`);
       response = await fetch(url.href);
     } catch {
-      // ignore
+      console.log(`Attempt ${attempts} failed for ${url.href}`);
     }
     attempts++;
   }
 
   if (!response?.ok || !`${response.status}`.startsWith('2')) {
-    throw new Error(`could not fetch`);
+    throw new Error(
+      `could not fetch URL! url.href=${url.href}, !!response=${!!response}, response.status=${response?.status}`,
+    );
   }
 
   return response;
