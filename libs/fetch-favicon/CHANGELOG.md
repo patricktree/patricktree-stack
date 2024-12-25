@@ -1,5 +1,11 @@
 # @pkerschbaum/fetch-favicon
 
+## 1.2.0
+
+### Minor Changes
+
+- b11b8c2: feat(fetch-favicon): also extract favicons defined using `<link rel="shortcut icon">` elements
+
 ## 1.1.0
 
 ### Minor Changes
