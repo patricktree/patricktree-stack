@@ -89,7 +89,7 @@ async function initializeBrowserInstance() {
 async function fetchUrl(url: URL): Promise<Response> {
   console.log(`Fetching URL: ${url.href}`);
   let attempts = 1;
-  let response;
+  let response: Response | undefined;
   while (attempts <= 3 && !response) {
     try {
       console.log(`Attempt ${attempts} for ${url.href}`);

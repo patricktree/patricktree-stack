@@ -41,17 +41,19 @@ async function gotoPageAndExtractFaviconURLFromPage(page: playwright.Page, websi
     timeout: PUPPETEER_NAVIGATION_TIMEOUT,
   });
 
-  const relativeIconURL = await page
-    .$("link[rel='icon']")
-    .then(async (handle) => handle?.getProperty('href'))
-    .then(async (jsHandle) => jsHandle?.jsonValue() as Promise<unknown>);
+  let linkElementForFavicon = await page.$("link[rel='icon']");
+  if (!linkElementForFavicon) {
+    linkElementForFavicon = await page.$("link[rel='shortcut icon']");
+  }
 
-  const absoluteIconURL =
-    typeof relativeIconURL === 'string'
-      ? // If we have an <link> element with rel='icon', return the URL for that
-        new URL(relativeIconURL, website)
-      : // As an alternative, return just /favicon.ico
-        new URL('/favicon.ico', website);
+  let relativeIconURL = await linkElementForFavicon
+    ?.getProperty('href')
+    .then(async (jsHandle) => jsHandle.jsonValue() as Promise<string>);
+  if (typeof relativeIconURL !== 'string') {
+    relativeIconURL = '/favicon.ico';
+  }
+
+  const absoluteIconURL = new URL(relativeIconURL, website);
 
   return absoluteIconURL;
 }
