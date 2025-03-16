@@ -14,7 +14,7 @@
   "author": "Patrick Kerschbaum <patrick.kerschbaum@gmail.com>",
   "type": "module",
   "exports": {
-    ".": null,
+    ".": "./dist/index.js",
     "./*": null
   },
   "files": [
