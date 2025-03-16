@@ -1,0 +1,49 @@
+{
+  "name": "@pkerschbaum/fetch-sitemap-locations",
+  "version": "0.0.1",
+  "homepage": "https://github.com/pkerschbaum/packages/tree/main/packages/fetch-sitemap-locations",
+  "bugs": {
+    "url": "https://github.com/pkerschbaum/packages/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pkerschbaum/packages",
+    "directory": "packages/fetch-sitemap-locations"
+  },
+  "license": "MIT",
+  "author": "Patrick Kerschbaum <patrick.kerschbaum@gmail.com>",
+  "type": "module",
+  "exports": {
+    ".": null,
+    "./*": null
+  },
+  "files": [
+    "bin/**",
+    "dist/**",
+    "!dist/**/*.d.ts.map"
+  ],
+  "scripts": {
+    "build": "pnpm run internal:compile",
+    "dev": "pnpm run build --watch --preserveWatchOutput",
+    "internal:compile": "tsc -p ./tsconfig.project.json",
+    "lint": "pnpm run lint:file .",
+    "lint:file": "eslint --max-warnings 0",
+    "lint:fix": "pnpm run lint --fix",
+    "nuke": "pnpm run nuke:artifacts && del-cli node_modules",
+    "nuke:artifacts": "del-cli dist \"*.tsbuildinfo\""
+  },
+  "dependencies": {
+    "@commander-js/extra-typings": "^13.1.0",
+    "commander": "^13.1.0",
+    "tiny-invariant": "^1.3.3",
+    "xml2js": "^0.6.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/xml2js": "^0.4.14"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
