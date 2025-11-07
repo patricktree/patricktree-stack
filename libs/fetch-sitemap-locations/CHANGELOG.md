@@ -1,4 +1,4 @@
-# @pkerschbaum/fetch-sitemap-locations
+# @patricktree/fetch-sitemap-locations
 
 ## 1.1.0
 

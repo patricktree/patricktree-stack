@@ -1,13 +1,13 @@
 {
-  "name": "@pkerschbaum/fetch-sitemap-locations",
+  "name": "@patricktree/fetch-sitemap-locations",
   "version": "1.1.0",
-  "homepage": "https://github.com/pkerschbaum/packages/tree/main/packages/fetch-sitemap-locations",
+  "homepage": "https://github.com/patricktree/packages/tree/main/packages/fetch-sitemap-locations",
   "bugs": {
-    "url": "https://github.com/pkerschbaum/packages/issues"
+    "url": "https://github.com/patricktree/packages/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/pkerschbaum/packages",
+    "url": "https://github.com/patricktree/packages",
     "directory": "packages/fetch-sitemap-locations"
   },
   "license": "MIT",

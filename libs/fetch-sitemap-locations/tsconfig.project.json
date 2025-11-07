@@ -1,5 +1,5 @@
 {
-  "extends": "@pkerschbaum/config-typescript/tsconfig.json",
+  "extends": "@patricktree/config-typescript/tsconfig.json",
   "compilerOptions": {
     /* Modules */
     "paths": {
