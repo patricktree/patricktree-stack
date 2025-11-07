@@ -1,4 +1,4 @@
-# @pkerschbaum/fetch-favicon
+# @patricktree/fetch-favicon
 
 ## 1.2.0
 
@@ -19,24 +19,24 @@
 - f43b99b: chore(deps): bump all deps to latest and apply ESLint fixes
 - Updated dependencies [aff99e2]
 - Updated dependencies [f43b99b]
-  - @pkerschbaum/commons-node@2.2.0
-  - @pkerschbaum/commons-ecma@2.4.1
+  - @patricktree/commons-node@2.2.0
+  - @patricktree/commons-ecma@2.4.1
 
 ## 1.0.7
 
 ### Patch Changes
 
 - Updated dependencies [defe2b1]
-  - @pkerschbaum/commons-ecma@2.1.2
-  - @pkerschbaum/commons-node@2.1.2
+  - @patricktree/commons-ecma@2.1.2
+  - @patricktree/commons-node@2.1.2
 
 ## 1.0.6
 
 ### Patch Changes
 
 - Updated dependencies [8aa8641]
-  - @pkerschbaum/commons-ecma@2.1.1
-  - @pkerschbaum/commons-node@2.1.1
+  - @patricktree/commons-ecma@2.1.1
+  - @patricktree/commons-node@2.1.1
 
 ## 1.0.5
 
@@ -44,16 +44,16 @@
 
 - Updated dependencies [2ad0473]
 - Updated dependencies [98c3b5e]
-  - @pkerschbaum/commons-node@2.1.0
-  - @pkerschbaum/commons-ecma@2.1.0
+  - @patricktree/commons-node@2.1.0
+  - @patricktree/commons-ecma@2.1.0
 
 ## 1.0.4
 
 ### Patch Changes
 
 - Updated dependencies [dbf4618]
-  - @pkerschbaum/commons-ecma@2.0.0
-  - @pkerschbaum/commons-node@2.0.0
+  - @patricktree/commons-ecma@2.0.0
+  - @patricktree/commons-node@2.0.0
 
 ## 1.0.3
 
@@ -73,16 +73,16 @@
 
 - 180ffcb: chore: change "binary.utils.ts" to "binary.ts"
 - Updated dependencies [180ffcb]
-  - @pkerschbaum/commons-node@1.0.1
+  - @patricktree/commons-node@1.0.1
 
 ## 1.0.0
 
 ### Major Changes
 
-- initial version (extracted from https://github.com/pkerschbaum/pkerschbaum-homepage)
+- initial version (extracted from https://github.com/patricktree/patricktree-homepage)
 
 ### Patch Changes
 
 - Updated dependencies
-  - @pkerschbaum/commons-ecma@1.0.0
-  - @pkerschbaum/commons-node@1.0.0
+  - @patricktree/commons-ecma@1.0.0
+  - @patricktree/commons-node@1.0.0

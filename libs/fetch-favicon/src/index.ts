@@ -2,9 +2,9 @@ import playwright from 'playwright';
 import invariant from 'tiny-invariant';
 import { z } from 'zod';
 
-import { arrays } from '@pkerschbaum/commons-ecma/util/arrays';
-import { check } from '@pkerschbaum/commons-ecma/util/assert';
-import { binaryUtils } from '@pkerschbaum/commons-node/utils/binary';
+import { arrays } from '@patricktree/commons-ecma/util/arrays';
+import { check } from '@patricktree/commons-ecma/util/assert';
+import { binaryUtils } from '@patricktree/commons-node/utils/binary';
 
 import { fetchFaviconURLs } from '#pkg/favicon.js';
 
