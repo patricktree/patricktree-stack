@@ -13,6 +13,9 @@
   "license": "MIT",
   "author": "Patrick Kerschbaum <patrick.kerschbaum@gmail.com>",
   "type": "module",
+  "imports": {
+    "#pkg/*": "./dist/*"
+  },
   "exports": {
     ".": "./dist/index.js",
     "./*": null
@@ -25,7 +28,7 @@
   "scripts": {
     "build": "pnpm run internal:compile",
     "dev": "pnpm run build --watch --preserveWatchOutput",
-    "internal:compile": "tsc -p ./tsconfig.project.json",
+    "internal:compile": "tsc --build ./tsconfig.json",
     "lint": "pnpm run lint:file .",
     "lint:file": "eslint --max-warnings 0",
     "lint:fix": "pnpm run lint --fix",
