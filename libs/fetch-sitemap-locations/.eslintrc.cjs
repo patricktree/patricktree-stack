@@ -1,15 +1,11 @@
-const baseEslintConfig = require('@patricktree/config-eslint/eslint-ecma.cjs');
-
 module.exports = {
-  ...baseEslintConfig,
+  extends: ['@patricktree/eslint-config/eslint-ecma.cjs'],
   parserOptions: {
-    ...baseEslintConfig.parserOptions,
     tsconfigRootDir: __dirname,
   },
+  ignorePatterns: ['bin/**/*'],
   rules: {
-    ...baseEslintConfig.rules,
     /* allow for this package to use console logs, as it is typically used in CLI applications */
     'no-console': 'off',
   },
-  ignorePatterns: [...(baseEslintConfig.ignorePatterns || []), 'bin/**/*'],
 };
