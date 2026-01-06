@@ -1,5 +1,12 @@
 # @patricktree/fetch-favicon
 
+## 1.3.0
+
+### Minor Changes
+
+- 8f290e5: - add a fetch-favicon CLI for batch URL input
+  - keep fetching other favicons when one fails, with clearer source logging
+
 ## 1.2.1
 
 ### Patch Changes
