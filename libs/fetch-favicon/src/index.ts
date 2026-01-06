@@ -2,7 +2,6 @@ import playwright from 'playwright';
 import invariant from 'tiny-invariant';
 import { z } from 'zod';
 
-import { arrays } from '@patricktree/commons-ecma/util/arrays';
 import { check } from '@patricktree/commons-ecma/util/assert';
 import { binaryUtils } from '@patricktree/commons-node/utils/binary';
 
@@ -45,29 +44,39 @@ export async function fetchFavicons(hrefs: string[]): Promise<FaviconsForWebsite
   }
 
   console.log('Step #2: Gather a list of favicon URLs we need to fetch (with duplicates removed)');
-  let allIconURLs: URL[] = [];
-  for (const entry of Object.values(websites)) {
+  const allIconURLs: Array<{ url: URL; sources: Set<string> }> = [];
+  function addIconTarget(iconURL: string, websiteHref: string) {
+    const existing = allIconURLs.find((entry) => entry.url.href === iconURL);
+    if (existing) {
+      existing.sources.add(websiteHref);
+      return;
+    }
+    allIconURLs.push({ url: new URL(iconURL), sources: new Set([websiteHref]) });
+  }
+  for (const [websiteHref, entry] of Object.entries(websites)) {
     invariant(entry);
     if (check.isNonEmptyString(entry.iconURLs.light)) {
-      allIconURLs.push(new URL(entry.iconURLs.light));
+      addIconTarget(entry.iconURLs.light, websiteHref);
     }
     if (check.isNonEmptyString(entry.iconURLs.dark)) {
-      allIconURLs.push(new URL(entry.iconURLs.dark));
+      addIconTarget(entry.iconURLs.dark, websiteHref);
     }
   }
-  allIconURLs = arrays.uniqueValues(allIconURLs);
 
   console.log('Step #3: Go to every favicon URL and store the favicon as a data URL');
   const icons: FaviconsForWebsites['icons'] = {};
-  await Promise.all(
-    allIconURLs.map(async (url) => {
-      console.log(`Fetching favicon from ${url.href}`);
+  for (const { url, sources } of allIconURLs) {
+    console.log(`Fetching favicon from ${url.href}`);
+    try {
       const response = await fetchUrl(url);
       const blob = await response.blob();
       const dataURL = await binaryUtils.convertBlobToDataURL(blob);
       icons[url.href] = { dataURL };
-    }),
-  );
+    } catch (error) {
+      const sourcesText = [...sources].join(', ');
+      console.error(`Failed to fetch favicon from ${url.href} (source: ${sourcesText})`, error);
+    }
+  }
 
   console.log('Step #4: Close the puppeteer browser');
   await browser.close();
