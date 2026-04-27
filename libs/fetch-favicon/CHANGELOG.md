@@ -1,5 +1,14 @@
 # @patricktree/fetch-favicon
 
+## 1.3.1
+
+### Patch Changes
+
+- Updated dependencies [8f41d11]
+- Updated dependencies [8f41d11]
+  - @patricktree/commons-ecma@3.1.0
+  - @patricktree/commons-node@3.1.0
+
 ## 1.3.0
 
 ### Minor Changes
