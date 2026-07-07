@@ -1,0 +1,8 @@
+{
+  "name": "@patricktree-stack/config-vitest",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

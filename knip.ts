@@ -1,0 +1,16 @@
+import type { KnipConfig } from "knip";
+
+const config: KnipConfig = {
+  $schema: "./node_modules/knip/schema.json",
+  ignoreDependencies: ["eslint-plugin-react-you-might-not-need-an-effect"],
+  workspaces: {
+    ".": {
+      ignoreDependencies: ["husky", "@emnapi/core", "@emnapi/runtime"],
+    },
+    "tooling/pkg-management": {
+      ignoreDependencies: ["@pnpm/worker"],
+    },
+  },
+};
+
+export default config;

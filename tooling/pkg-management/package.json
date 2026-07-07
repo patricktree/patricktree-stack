@@ -1,0 +1,50 @@
+{
+  "name": "@patricktree-stack/pkg-management",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#src/*.ts": {
+      "types": "./dist/types/*.d.ts",
+      "default": "./src/*.ts"
+    },
+    "#src/*": {
+      "types": "./dist/types/*",
+      "default": "./src/*"
+    }
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "turbo run turbo:build",
+    "clean": "del-cli --dot=true \"dist\" \"*.tsbuildinfo\"",
+    "dev": "turbo run turbo:dev",
+    "lint": "turbo run turbo:lint",
+    "lint:fix": "turbo run turbo:lint:fix",
+    "turbo:build": "tsgo --build ./tsconfig.json",
+    "turbo:dev": "tsgo --build ./tsconfig.json --watch",
+    "turbo:lint": "oxlint --type-aware --max-warnings 0 .",
+    "turbo:lint:fix": "pnpm run turbo:lint --fix"
+  },
+  "dependencies": {
+    "@pnpm/filter-workspace-packages": "^1000.1.6",
+    "@pnpm/find-workspace-dir": "^1000.1.5",
+    "@pnpm/logger": "^1001",
+    "@pnpm/worker": "^1000",
+    "@pnpm/workspace.find-packages": "^1000.0.65",
+    "js-yaml": "^5.2.1"
+  },
+  "devDependencies": {
+    "@patricktree-stack/config-oxlint": "workspace:*",
+    "@patricktree-stack/config-typescript": "workspace:*",
+    "@types/node": "catalog:",
+    "@typescript/native-preview": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "typescript": "catalog:"
+  }
+}
