@@ -6,8 +6,5 @@
     "eslint-plugin-react-you-might-not-need-an-effect": "^1.0.1",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:"
-  },
-  "peerDependencies": {
-    "eslint-plugin-react-you-might-not-need-an-effect": "^1.0.1"
   }
 }

@@ -18,6 +18,11 @@ packageExtensions:
       eslint:
         optional: true
 
+# hoist only flawed packages to node_modules/.pnpm/node_modules
+hoistPattern:
+  # oxlint resolves dependencies wrong apparently, its deps need to be hoisted
+  - eslint-plugin-react-you-might-not-need-an-effect
+
 # handle peer dependencies in a strict way
 autoInstallPeers: false
 resolvePeersFromWorkspaceRoot: false
