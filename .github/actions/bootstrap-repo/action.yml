@@ -1,0 +1,19 @@
+name: "bootstrap-repo"
+description: "Bootstrap the repository (install dependencies, set up Node.js, etc.)"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up pnpm
+      uses: pnpm/action-setup@v6.0.5
+      with:
+        cache: true
+        # `standalone: true` so that we don't need to care about the installed Node.js version
+        standalone: true
+
+    - name: Install dependencies and Node.js (via package.json#devEngines.runtime)
+      shell: bash
+      run: |
+        node_version=$(jq -r '.devEngines.runtime.version' package.json)
+        pnpm runtime set node "${node_version}" -g
+        pnpm install --frozen-lockfile
