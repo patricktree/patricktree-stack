@@ -1,13 +1,9 @@
 import { defineConfig } from "oxfmt";
 
+import { config as baseConfig } from "@patricktree-stack/config-oxfmt/oxfmt-base.js";
+
 export default defineConfig({
-  ignorePatterns: [
-    /* pnpm-workspace.yaml is managed by pnpm */
-    "/pnpm-workspace.yaml",
-  ],
-  sortPackageJson: {
-    sortScripts: true,
-  },
+  ...baseConfig,
   sortImports: {
     customGroups: [
       /* create a group for patricktree packages to separate them from other external dependencies */
@@ -43,5 +39,4 @@ export default defineConfig({
       "unknown",
     ],
   },
-  jsdoc: true,
 });

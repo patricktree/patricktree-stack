@@ -1,0 +1,8 @@
+{
+  "name": "@patricktree-stack/config-oxfmt",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "oxfmt": "catalog:"
+  }
+}

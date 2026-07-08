@@ -12,6 +12,9 @@ catalogs:
     '@typescript/native-preview':
       specifier: 7.0.0-dev.20260706.1
       version: 7.0.0-dev.20260706.1
+    oxfmt:
+      specifier: ^0.58.0
+      version: 0.58.0
     oxlint:
       specifier: ^1.72.0
       version: 1.72.0
@@ -37,6 +40,9 @@ importers:
       '@emnapi/runtime':
         specifier: ^1.11.2
         version: 1.11.2
+      '@patricktree-stack/config-oxfmt':
+        specifier: workspace:*
+        version: link:tooling/config-oxfmt
       del-cli:
         specifier: ^7.0.0
         version: 7.0.0
@@ -50,7 +56,7 @@ importers:
         specifier: runtime:^24.18.0
         version: runtime:24.18.0
       oxfmt:
-        specifier: ^0.58.0
+        specifier: 'catalog:'
         version: 0.58.0
       oxlint:
         specifier: 'catalog:'
@@ -198,6 +204,12 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+
+  tooling/config-oxfmt:
+    dependencies:
+      oxfmt:
+        specifier: 'catalog:'
+        version: 0.58.0
 
   tooling/config-oxlint:
     dependencies:
