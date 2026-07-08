@@ -34,8 +34,8 @@
     "turbo:lint:fix": "pnpm run turbo:lint --fix"
   },
   "dependencies": {
-    "@opentelemetry/api": "^1.9.1",
-    "@opentelemetry/api-logs": "^0.220.0",
+    "@opentelemetry/api": "catalog:o11y",
+    "@opentelemetry/api-logs": "catalog:o11y",
     "@patricktree/commons-ecma": "^3.1.1"
   },
   "devDependencies": {
