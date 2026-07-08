@@ -11,8 +11,14 @@ export const filterWorkspaceProjects = async (opts: {
   monorepoPackagePrefix: string;
   filter: string[];
   followProdDepsOnly: boolean;
+  workspaceRoot?: string;
 }): Promise<Project[]> => {
-  const { monorepoRootDir, rootProject, workspaceProjects } = await findWorkspaceProjects();
+  const findWorkspaceProjectsOptions = opts.workspaceRoot
+    ? { workspaceRoot: opts.workspaceRoot }
+    : undefined;
+  const { monorepoRootDir, rootProject, workspaceProjects } = await findWorkspaceProjects(
+    findWorkspaceProjectsOptions,
+  );
 
   const { selectedProjectsGraph, unmatchedFilters } = await filterPackages(
     [rootProject, ...workspaceProjects],

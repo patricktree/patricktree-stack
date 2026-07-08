@@ -9,38 +9,52 @@ import {
 } from "@patricktree-stack/pkg-management";
 
 type CreatePrunedMonorepoOptions = {
-  projectName: `@${string}/${string}`;
+  projectNames: string[];
   monorepoPackagePrefix: string;
-  monorepoRootProjectName: `@${string}/${string}`;
+  monorepoRootProjectName: string;
+  linkedMonorepoDirName: string;
   targetDir: string;
+  workspaceRoot?: string;
 };
 
 export async function createPrunedMonorepo({
-  projectName,
+  projectNames,
   monorepoPackagePrefix,
   monorepoRootProjectName,
+  linkedMonorepoDirName,
   targetDir: prunedMonorepoDir,
+  workspaceRoot,
 }: CreatePrunedMonorepoOptions) {
   console.log(
-    `creating pruned monorepo... projectName: ${projectName}, targetDir: ${prunedMonorepoDir}`,
+    `creating pruned monorepo... projectNames: [${projectNames.join(", ")}], targetDir: ${prunedMonorepoDir}`,
   );
 
-  console.log(`determining workspaces projects to copy...`);
+  const workspaceOptions = workspaceRoot ? { workspaceRoot } : undefined;
+  const { monorepoRootDir } = await findWorkspaceProjects(workspaceOptions);
+
+  console.log(`determining workspaces projects to include...`);
+
   const projectsToInclude = await filterWorkspaceProjects({
     monorepoPackagePrefix,
     filter: [
-      // include project and its workspace dependencies
-      `${projectName}...`,
+      // include projects and their workspace dependencies
+      ...projectNames.map((projectName) => `${projectName}...`),
       // and monorepo root and its workspace dependencies
       `${monorepoRootProjectName}...`,
     ],
     followProdDepsOnly: true,
+    ...workspaceOptions,
   });
 
   console.log(
-    `determined ${projectsToInclude.length} projects to copy, determining all files of them to copy...`,
+    `determined ${projectsToInclude.length} projects to include, determining all files of them to copy...`,
   );
-  const { monorepoRootDir } = await findWorkspaceProjects();
+  await copyLinkedMonorepoProjects({
+    monorepoRootDir,
+    linkedMonorepoDirName,
+    projects: projectsToInclude,
+    prunedMonorepoDir,
+  });
   const allFilesToCopy = (
     await Promise.all(
       projectsToInclude.map((project) =>
@@ -65,6 +79,133 @@ export async function createPrunedMonorepo({
 
   console.log(`pruned monorepo successfully created!`);
   return { prunedMonorepoDir };
+}
+
+async function copyLinkedMonorepoProjects({
+  monorepoRootDir,
+  linkedMonorepoDirName,
+  projects,
+  prunedMonorepoDir,
+}: {
+  monorepoRootDir: string;
+  linkedMonorepoDirName: string;
+  projects: Project[];
+  prunedMonorepoDir: string;
+}) {
+  const linkedProjectNames = await getLinkedMonorepoProjectNames({
+    monorepoRootDir,
+    linkedMonorepoDirName,
+    projects,
+  });
+  if (linkedProjectNames.length === 0) {
+    return;
+  }
+
+  const linkedMonorepoDir = path.join(monorepoRootDir, linkedMonorepoDirName);
+  const { rootProject } = await findWorkspaceProjects({ workspaceRoot: linkedMonorepoDir });
+  const rootProjectName = rootProject.manifest.name;
+  if (typeof rootProjectName !== "string") {
+    throw new Error(
+      `Expected ${linkedMonorepoDirName} root project to have a package name, but got ${String(
+        rootProjectName,
+      )}.`,
+    );
+  }
+
+  console.log(
+    `determined ${linkedMonorepoDirName} projects from linked dependencies: [${linkedProjectNames.join(
+      ", ",
+    )}], creating pruned monorepo for them...`,
+  );
+  await createPrunedMonorepo({
+    monorepoPackagePrefix: getPackageScope(rootProjectName),
+    monorepoRootProjectName: rootProjectName,
+    linkedMonorepoDirName,
+    projectNames: linkedProjectNames,
+    targetDir: path.join(prunedMonorepoDir, linkedMonorepoDirName),
+    workspaceRoot: linkedMonorepoDir,
+  });
+}
+
+async function getLinkedMonorepoProjectNames({
+  monorepoRootDir,
+  linkedMonorepoDirName,
+  projects,
+}: {
+  monorepoRootDir: string;
+  linkedMonorepoDirName: string;
+  projects: Project[];
+}): Promise<string[]> {
+  const linkedMonorepoDir = path.join(monorepoRootDir, linkedMonorepoDirName);
+  const linkedProjectNames = new Set<string>();
+
+  for (const project of projects) {
+    for (const [, dependencyReference] of getProductionDependencyReferences(project)) {
+      if (!dependencyReference.startsWith("link:")) {
+        continue;
+      }
+
+      const linkedProjectDir = path.resolve(
+        project.rootDir,
+        dependencyReference.slice("link:".length),
+      );
+      if (!isSubpathOf(linkedProjectDir, linkedMonorepoDir)) {
+        continue;
+      }
+      const linkedProjectName = await readProjectName(linkedProjectDir);
+      if (typeof linkedProjectName !== "string") {
+        throw new Error(
+          `Expected ${linkedMonorepoDirName} linked project at ${linkedProjectDir} to have a package name, but got ${String(
+            linkedProjectName,
+          )}.`,
+        );
+      }
+      linkedProjectNames.add(linkedProjectName);
+    }
+  }
+
+  return [...linkedProjectNames].sort();
+}
+
+function getProductionDependencyReferences(project: Project): [string, string][] {
+  const dependencyReferenceEntries: [string, string][] = [];
+
+  for (const dependencyReferences of [
+    project.manifest.dependencies,
+    project.manifest.optionalDependencies,
+  ]) {
+    for (const [projectName, dependencyReference] of Object.entries(dependencyReferences ?? {})) {
+      if (typeof dependencyReference === "string") {
+        dependencyReferenceEntries.push([projectName, dependencyReference]);
+      }
+    }
+  }
+
+  return dependencyReferenceEntries;
+}
+
+async function readProjectName(projectDir: string): Promise<unknown> {
+  const packageJson: unknown = JSON.parse(
+    await fs.promises.readFile(path.join(projectDir, "package.json"), "utf-8"),
+  );
+  if (typeof packageJson !== "object" || packageJson === null || !("name" in packageJson)) {
+    return undefined;
+  }
+  return packageJson.name;
+}
+
+function isSubpathOf(candidatePath: string, parentPath: string): boolean {
+  const relativePath = path.relative(parentPath, candidatePath);
+  return relativePath === "" || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath));
+}
+
+function getPackageScope(projectName: string): string {
+  if (!projectName.startsWith("@") && projectName.includes("/")) {
+    throw new Error(
+      `Expected project name ${projectName} to be a scoped package name (starting with "@"), but it is not.`,
+    );
+  }
+  return projectName.slice(0, projectName.indexOf("/"));
 }
 
 /**

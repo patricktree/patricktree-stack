@@ -85,7 +85,8 @@ test("copies the selected project, production workspace dependencies, and monore
   await createPrunedMonorepo({
     monorepoPackagePrefix: "@patricktree",
     monorepoRootProjectName: "@patricktree-stack/monorepo-root",
-    projectName: "@patricktree-stack/app",
+    linkedMonorepoDirName: ".linked-monorepo",
+    projectNames: ["@patricktree-stack/app"],
     targetDir: prunedMonorepoDir,
   });
 
@@ -105,6 +106,460 @@ test("copies the selected project, production workspace dependencies, and monore
     ├── package.json
     ├── pnpm-workspace.yaml
     └── root-file.txt
+    "
+  `);
+});
+
+test("copies a linked monorepo project used by the consuming project", async () => {
+  const monorepoDir = await createTemporaryDirectory();
+  const prunedMonorepoDir = await createTemporaryDirectory();
+
+  await writeDirectoryTree(
+    monorepoDir,
+    `
+      ./
+      ├── .linked-monorepo
+      │   ├── libs
+      │   │   └── observability
+      │   │       ├── src
+      │   │       │   └── index.ts
+      │   │       └── package.json
+      │   ├── package.json
+      │   └── pnpm-workspace.yaml
+      ├── packages
+      │   └── app
+      │       ├── src
+      │       │   └── index.ts
+      │       └── package.json
+      ├── package.json
+      └── pnpm-workspace.yaml
+    `,
+    {
+      ".linked-monorepo/libs/observability/package.json": json({
+        name: "@patricktree-stack/observability",
+        private: true,
+        files: ["src"],
+      }),
+      ".linked-monorepo/libs/observability/src/index.ts": "export {};\n",
+      ".linked-monorepo/package.json": json({
+        name: "@patricktree-stack/monorepo-root",
+        private: true,
+        files: ["pnpm-workspace.yaml"],
+      }),
+      ".linked-monorepo/pnpm-workspace.yaml": 'packages:\n  - "libs/*"\n',
+      "package.json": json({
+        name: "@patricktree/monorepo-root",
+        private: true,
+        files: ["pnpm-workspace.yaml"],
+      }),
+      "packages/app/package.json": json({
+        name: "@patricktree/app",
+        private: true,
+        files: ["src"],
+        dependencies: {
+          "@patricktree-stack/observability": "link:../../.linked-monorepo/libs/observability",
+        },
+      }),
+      "packages/app/src/index.ts": "export {};\n",
+      "pnpm-workspace.yaml": 'packages:\n  - "packages/*"\n',
+    },
+  );
+
+  process.chdir(monorepoDir);
+  await createPrunedMonorepo({
+    monorepoPackagePrefix: "@patricktree",
+    monorepoRootProjectName: "@patricktree/monorepo-root",
+    linkedMonorepoDirName: ".linked-monorepo",
+    projectNames: ["@patricktree/app"],
+    targetDir: prunedMonorepoDir,
+  });
+
+  expect(await visualizeDirectoryTree(prunedMonorepoDir)).toMatchInlineSnapshot(`
+    "./
+    ├── .linked-monorepo
+    │   ├── libs
+    │   │   └── observability
+    │   │       ├── src
+    │   │       │   └── index.ts
+    │   │       └── package.json
+    │   ├── package.json
+    │   └── pnpm-workspace.yaml
+    ├── packages
+    │   └── app
+    │       ├── src
+    │       │   └── index.ts
+    │       └── package.json
+    ├── package.json
+    └── pnpm-workspace.yaml
+    "
+  `);
+});
+
+test("copies production workspace dependencies of a linked monorepo project", async () => {
+  const monorepoDir = await createTemporaryDirectory();
+  const prunedMonorepoDir = await createTemporaryDirectory();
+
+  await writeDirectoryTree(
+    monorepoDir,
+    `
+      ./
+      ├── .linked-monorepo
+      │   ├── libs
+      │   │   ├── observability
+      │   │   │   ├── src
+      │   │   │   │   └── index.ts
+      │   │   │   └── package.json
+      │   │   └── shared
+      │   │       ├── src
+      │   │       │   └── index.ts
+      │   │       └── package.json
+      │   ├── package.json
+      │   └── pnpm-workspace.yaml
+      ├── packages
+      │   └── app
+      │       ├── src
+      │       │   └── index.ts
+      │       └── package.json
+      ├── package.json
+      └── pnpm-workspace.yaml
+    `,
+    {
+      ".linked-monorepo/libs/observability/package.json": json({
+        name: "@patricktree-stack/observability",
+        private: true,
+        files: ["src"],
+        dependencies: { "@patricktree-stack/shared": "workspace:*" },
+      }),
+      ".linked-monorepo/libs/observability/src/index.ts": "export {};\n",
+      ".linked-monorepo/libs/shared/package.json": json({
+        name: "@patricktree-stack/shared",
+        private: true,
+        files: ["src"],
+      }),
+      ".linked-monorepo/libs/shared/src/index.ts": "export {};\n",
+      ".linked-monorepo/package.json": json({
+        name: "@patricktree-stack/monorepo-root",
+        private: true,
+        files: ["pnpm-workspace.yaml"],
+      }),
+      ".linked-monorepo/pnpm-workspace.yaml": 'packages:\n  - "libs/*"\n',
+      "package.json": json({
+        name: "@patricktree/monorepo-root",
+        private: true,
+        files: ["pnpm-workspace.yaml"],
+      }),
+      "packages/app/package.json": json({
+        name: "@patricktree/app",
+        private: true,
+        files: ["src"],
+        dependencies: {
+          "@patricktree-stack/observability": "link:../../.linked-monorepo/libs/observability",
+        },
+      }),
+      "packages/app/src/index.ts": "export {};\n",
+      "pnpm-workspace.yaml": 'packages:\n  - "packages/*"\n',
+    },
+  );
+
+  process.chdir(monorepoDir);
+  await createPrunedMonorepo({
+    monorepoPackagePrefix: "@patricktree",
+    monorepoRootProjectName: "@patricktree/monorepo-root",
+    linkedMonorepoDirName: ".linked-monorepo",
+    projectNames: ["@patricktree/app"],
+    targetDir: prunedMonorepoDir,
+  });
+
+  expect(await visualizeDirectoryTree(prunedMonorepoDir)).toMatchInlineSnapshot(`
+    "./
+    ├── .linked-monorepo
+    │   ├── libs
+    │   │   ├── observability
+    │   │   │   ├── src
+    │   │   │   │   └── index.ts
+    │   │   │   └── package.json
+    │   │   └── shared
+    │   │       ├── src
+    │   │       │   └── index.ts
+    │   │       └── package.json
+    │   ├── package.json
+    │   └── pnpm-workspace.yaml
+    ├── packages
+    │   └── app
+    │       ├── src
+    │       │   └── index.ts
+    │       └── package.json
+    ├── package.json
+    └── pnpm-workspace.yaml
+    "
+  `);
+});
+
+test("copies linked monorepo root files and production workspace dependencies", async () => {
+  const monorepoDir = await createTemporaryDirectory();
+  const prunedMonorepoDir = await createTemporaryDirectory();
+
+  await writeDirectoryTree(
+    monorepoDir,
+    `
+      ./
+      ├── .linked-monorepo
+      │   ├── libs
+      │   │   └── observability
+      │   │       ├── src
+      │   │       │   └── index.ts
+      │   │       └── package.json
+      │   ├── tooling
+      │   │   └── root-config
+      │   │       ├── config.json
+      │   │       └── package.json
+      │   ├── package.json
+      │   ├── pnpm-workspace.yaml
+      │   └── root-file.txt
+      ├── packages
+      │   └── app
+      │       ├── src
+      │       │   └── index.ts
+      │       └── package.json
+      ├── package.json
+      └── pnpm-workspace.yaml
+    `,
+    {
+      ".linked-monorepo/libs/observability/package.json": json({
+        name: "@patricktree-stack/observability",
+        private: true,
+        files: ["src"],
+      }),
+      ".linked-monorepo/libs/observability/src/index.ts": "export {};\n",
+      ".linked-monorepo/package.json": json({
+        name: "@patricktree-stack/monorepo-root",
+        private: true,
+        files: ["pnpm-workspace.yaml", "root-file.txt"],
+        dependencies: { "@patricktree-stack/root-config": "workspace:*" },
+      }),
+      ".linked-monorepo/pnpm-workspace.yaml": 'packages:\n  - "libs/*"\n  - "tooling/*"\n',
+      ".linked-monorepo/root-file.txt": "root file\n",
+      ".linked-monorepo/tooling/root-config/config.json": "{}\n",
+      ".linked-monorepo/tooling/root-config/package.json": json({
+        name: "@patricktree-stack/root-config",
+        private: true,
+        files: ["config.json"],
+      }),
+      "package.json": json({
+        name: "@patricktree/monorepo-root",
+        private: true,
+        files: ["pnpm-workspace.yaml"],
+      }),
+      "packages/app/package.json": json({
+        name: "@patricktree/app",
+        private: true,
+        files: ["src"],
+        dependencies: {
+          "@patricktree-stack/observability": "link:../../.linked-monorepo/libs/observability",
+        },
+      }),
+      "packages/app/src/index.ts": "export {};\n",
+      "pnpm-workspace.yaml": 'packages:\n  - "packages/*"\n',
+    },
+  );
+
+  process.chdir(monorepoDir);
+  await createPrunedMonorepo({
+    monorepoPackagePrefix: "@patricktree",
+    monorepoRootProjectName: "@patricktree/monorepo-root",
+    linkedMonorepoDirName: ".linked-monorepo",
+    projectNames: ["@patricktree/app"],
+    targetDir: prunedMonorepoDir,
+  });
+
+  expect(await visualizeDirectoryTree(prunedMonorepoDir)).toMatchInlineSnapshot(`
+    "./
+    ├── .linked-monorepo
+    │   ├── libs
+    │   │   └── observability
+    │   │       ├── src
+    │   │       │   └── index.ts
+    │   │       └── package.json
+    │   ├── tooling
+    │   │   └── root-config
+    │   │       ├── config.json
+    │   │       └── package.json
+    │   ├── package.json
+    │   ├── pnpm-workspace.yaml
+    │   └── root-file.txt
+    ├── packages
+    │   └── app
+    │       ├── src
+    │       │   └── index.ts
+    │       └── package.json
+    ├── package.json
+    └── pnpm-workspace.yaml
+    "
+  `);
+});
+
+test("copies linked .linked-monorepo dependencies when the consuming project uses a package alias", async () => {
+  const monorepoDir = await createTemporaryDirectory();
+  const prunedMonorepoDir = await createTemporaryDirectory();
+
+  await writeDirectoryTree(
+    monorepoDir,
+    `
+      ./
+      ├── .linked-monorepo
+      │   ├── my-lib
+      │   │   ├── src
+      │   │   │   └── index.ts
+      │   │   └── package.json
+      │   ├── package.json
+      │   └── pnpm-workspace.yaml
+      ├── packages
+      │   └── app
+      │       ├── src
+      │       │   └── index.ts
+      │       └── package.json
+      ├── package.json
+      └── pnpm-workspace.yaml
+    `,
+    {
+      ".linked-monorepo/my-lib/package.json": json({
+        name: "my-lib",
+        private: true,
+        files: ["src"],
+      }),
+      ".linked-monorepo/my-lib/src/index.ts": "export {};\n",
+      ".linked-monorepo/package.json": json({
+        name: "stack-root",
+        private: true,
+        files: ["pnpm-workspace.yaml"],
+      }),
+      ".linked-monorepo/pnpm-workspace.yaml": 'packages:\n  - "my-lib"\n',
+      "package.json": json({
+        name: "@patricktree/monorepo-root",
+        private: true,
+        files: ["pnpm-workspace.yaml"],
+      }),
+      "packages/app/package.json": json({
+        name: "@patricktree/app",
+        private: true,
+        files: ["src"],
+        dependencies: {
+          "@patricktree-stack-aliased/aliased": "link:../../.linked-monorepo/my-lib",
+        },
+      }),
+      "packages/app/src/index.ts": "export {};\n",
+      "pnpm-workspace.yaml": 'packages:\n  - "packages/*"\n',
+    },
+  );
+
+  process.chdir(monorepoDir);
+  await createPrunedMonorepo({
+    monorepoPackagePrefix: "@patricktree",
+    monorepoRootProjectName: "@patricktree/monorepo-root",
+    linkedMonorepoDirName: ".linked-monorepo",
+    projectNames: ["@patricktree/app"],
+    targetDir: prunedMonorepoDir,
+  });
+
+  expect(await visualizeDirectoryTree(prunedMonorepoDir)).toMatchInlineSnapshot(`
+    "./
+    ├── .linked-monorepo
+    │   ├── my-lib
+    │   │   ├── src
+    │   │   │   └── index.ts
+    │   │   └── package.json
+    │   ├── package.json
+    │   └── pnpm-workspace.yaml
+    ├── packages
+    │   └── app
+    │       ├── src
+    │       │   └── index.ts
+    │       └── package.json
+    ├── package.json
+    └── pnpm-workspace.yaml
+    "
+  `);
+});
+
+test("includes all selected projects and their production workspace dependencies", async () => {
+  const monorepoDir = await createTemporaryDirectory();
+  const prunedMonorepoDir = await createTemporaryDirectory();
+
+  await writeDirectoryTree(
+    monorepoDir,
+    `
+      ./
+      ├── packages
+      │   ├── app-one
+      │   │   ├── src
+      │   │   │   └── index.ts
+      │   │   └── package.json
+      │   ├── app-two
+      │   │   ├── src
+      │   │   │   └── index.ts
+      │   │   └── package.json
+      │   └── shared
+      │       ├── src
+      │       │   └── index.ts
+      │       └── package.json
+      ├── package.json
+      └── pnpm-workspace.yaml
+    `,
+    {
+      "package.json": json({
+        name: "@patricktree-stack/monorepo-root",
+        private: true,
+        files: ["pnpm-workspace.yaml"],
+      }),
+      "packages/app-one/package.json": json({
+        name: "@patricktree-stack/app-one",
+        private: true,
+        files: ["src"],
+      }),
+      "packages/app-one/src/index.ts": "export {};\n",
+      "packages/app-two/package.json": json({
+        name: "@patricktree-stack/app-two",
+        private: true,
+        files: ["src"],
+        dependencies: { "@patricktree-stack/shared": "workspace:*" },
+      }),
+      "packages/app-two/src/index.ts": "export {};\n",
+      "packages/shared/package.json": json({
+        name: "@patricktree-stack/shared",
+        private: true,
+        files: ["src"],
+      }),
+      "packages/shared/src/index.ts": "export {};\n",
+      "pnpm-workspace.yaml": 'packages:\n  - "packages/*"\n',
+    },
+  );
+
+  process.chdir(monorepoDir);
+  await createPrunedMonorepo({
+    monorepoPackagePrefix: "@patricktree",
+    monorepoRootProjectName: "@patricktree-stack/monorepo-root",
+    linkedMonorepoDirName: ".linked-monorepo",
+    projectNames: ["@patricktree-stack/app-one", "@patricktree-stack/app-two"],
+    targetDir: prunedMonorepoDir,
+  });
+
+  expect(await visualizeDirectoryTree(prunedMonorepoDir)).toMatchInlineSnapshot(`
+    "./
+    ├── packages
+    │   ├── app-one
+    │   │   ├── src
+    │   │   │   └── index.ts
+    │   │   └── package.json
+    │   ├── app-two
+    │   │   ├── src
+    │   │   │   └── index.ts
+    │   │   └── package.json
+    │   └── shared
+    │       ├── src
+    │       │   └── index.ts
+    │       └── package.json
+    ├── package.json
+    └── pnpm-workspace.yaml
     "
   `);
 });
@@ -145,7 +600,8 @@ test("throws when an included project does not declare package files", async () 
     createPrunedMonorepo({
       monorepoPackagePrefix: "@patricktree",
       monorepoRootProjectName: "@patricktree-stack/monorepo-root",
-      projectName: "@patricktree-stack/app",
+      linkedMonorepoDirName: ".linked-monorepo",
+      projectNames: ["@patricktree-stack/app"],
       targetDir: prunedMonorepoDir,
     }),
   ).rejects.toThrow('Expected project @patricktree-stack/app to have "files" field');
@@ -209,7 +665,8 @@ test("copies transitive production workspace dependencies", async () => {
   await createPrunedMonorepo({
     monorepoPackagePrefix: "@patricktree",
     monorepoRootProjectName: "@patricktree-stack/monorepo-root",
-    projectName: "@patricktree-stack/app",
+    linkedMonorepoDirName: ".linked-monorepo",
+    projectNames: ["@patricktree-stack/app"],
     targetDir: prunedMonorepoDir,
   });
 
@@ -280,7 +737,8 @@ test("copies production workspace dependencies of the monorepo root", async () =
   await createPrunedMonorepo({
     monorepoPackagePrefix: "@patricktree",
     monorepoRootProjectName: "@patricktree-stack/monorepo-root",
-    projectName: "@patricktree-stack/app",
+    linkedMonorepoDirName: ".linked-monorepo",
+    projectNames: ["@patricktree-stack/app"],
     targetDir: prunedMonorepoDir,
   });
 
@@ -337,7 +795,8 @@ test("preserves matched symlinks instead of dereferencing them", async () => {
   await createPrunedMonorepo({
     monorepoPackagePrefix: "@patricktree",
     monorepoRootProjectName: "@patricktree-stack/monorepo-root",
-    projectName: "@patricktree-stack/app",
+    linkedMonorepoDirName: ".linked-monorepo",
+    projectNames: ["@patricktree-stack/app"],
     targetDir: prunedMonorepoDir,
   });
 
@@ -395,7 +854,8 @@ test("excludes node_modules even when package files include it", async () => {
   await createPrunedMonorepo({
     monorepoPackagePrefix: "@patricktree",
     monorepoRootProjectName: "@patricktree-stack/monorepo-root",
-    projectName: "@patricktree-stack/app",
+    linkedMonorepoDirName: ".linked-monorepo",
+    projectNames: ["@patricktree-stack/app"],
     targetDir: prunedMonorepoDir,
   });
 
@@ -453,7 +913,8 @@ test("copies matched dotfiles and files inside matched dot directories", async (
   await createPrunedMonorepo({
     monorepoPackagePrefix: "@patricktree",
     monorepoRootProjectName: "@patricktree-stack/monorepo-root",
-    projectName: "@patricktree-stack/app",
+    linkedMonorepoDirName: ".linked-monorepo",
+    projectNames: ["@patricktree-stack/app"],
     targetDir: prunedMonorepoDir,
   });
 
