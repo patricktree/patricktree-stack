@@ -1,8 +1,7 @@
+import type { Attributes } from "@opentelemetry/api";
 import { logs, SeverityNumber } from "@opentelemetry/api-logs";
 import { serializeErrorWithCause } from "@patricktree/commons-ecma/util/error";
 import { jsonUtil } from "@patricktree/commons-ecma/util/json";
-
-import type { Attributes } from "@opentelemetry/api";
 
 export type LogAttributes = Attributes;
 
