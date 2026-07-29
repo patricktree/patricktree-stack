@@ -1,1 +1,1 @@
-export { fetchSitemapLinks } from '#pkg/fetch-sitemap-links.js';
+export { fetchSitemapLinks } from "#pkg/fetch-sitemap-links.js";

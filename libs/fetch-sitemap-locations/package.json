@@ -5,13 +5,18 @@
   "bugs": {
     "url": "https://github.com/patricktree/packages/issues"
   },
+  "license": "MIT",
+  "author": "Patrick Kerschbaum <patrick.kerschbaum@gmail.com>",
   "repository": {
     "type": "git",
     "url": "https://github.com/patricktree/packages",
     "directory": "packages/fetch-sitemap-locations"
   },
-  "license": "MIT",
-  "author": "Patrick Kerschbaum <patrick.kerschbaum@gmail.com>",
+  "files": [
+    "bin/**",
+    "dist/**",
+    "!dist/**/*.d.ts.map"
+  ],
   "type": "module",
   "imports": {
     "#pkg/*": "./dist/*"
@@ -20,23 +25,19 @@
     ".": "./dist/index.js",
     "./*": null
   },
-  "files": [
-    "bin/**",
-    "dist/**",
-    "!dist/**/*.d.ts.map"
-  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "build": "superturbo run turbo:build",
-    "dev": "pnpm run build --watch --preserveWatchOutput",
+    "build": "turbo run turbo:build",
+    "build:watch": "turbo watch turbo:build",
+    "clean": "del-cli --dot=true \"dist\" \"*.tsbuildinfo\"",
     "internal:compile": "tsc --build ./tsconfig.json",
-    "lint": "superturbo run turbo:lint",
-    "lint:file": "eslint --max-warnings 0",
-    "lint:fix": "superturbo run turbo:lint:fix",
-    "nuke": "pnpm run nuke:artifacts && del-cli node_modules",
-    "nuke:artifacts": "del-cli dist \"*.tsbuildinfo\"",
+    "lint": "turbo run turbo:lint",
+    "lint:fix": "turbo run turbo:lint:fix",
     "turbo:build": "pnpm run internal:compile",
-    "turbo:lint": "pnpm run lint:file .",
-    "turbo:lint:fix": "pnpm run lint:file . --fix"
+    "turbo:lint": "oxlint --type-aware --max-warnings 0 .",
+    "turbo:lint:fix": "pnpm run turbo:lint --fix"
   },
   "dependencies": {
     "@commander-js/extra-typings": "^13.1.0",
@@ -46,10 +47,12 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/xml2js": "^0.4.14"
-  },
-  "publishConfig": {
-    "access": "public"
+    "@patricktree-stack/config-oxlint": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/xml2js": "^0.4.14",
+    "@typescript/native": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "typescript": "catalog:"
   }
 }

@@ -1,8 +1,8 @@
-import invariant from 'tiny-invariant';
-import * as xml2js from 'xml2js';
-import { z } from 'zod';
+import invariant from "tiny-invariant";
+import * as xml2js from "xml2js";
+import { z } from "zod";
 
-import { log } from '#pkg/logger.js';
+import { log } from "#pkg/logger.js";
 
 const schema_sitemapindex = z.object({
   sitemapindex: z.object({
@@ -40,7 +40,7 @@ export async function* fetchSitemapLinks(url: URL): AsyncGenerator<string[], voi
     const result = (await parser.parseStringPromise(data)) as unknown;
     const parsed = schema_sitemap.parse(result);
 
-    if ('sitemapindex' in parsed) {
+    if ("sitemapindex" in parsed) {
       // Enqueue nested sitemaps
       const sitemaps = parsed.sitemapindex.sitemap.map((entry) => {
         invariant(entry.loc.length === 1);
@@ -52,7 +52,7 @@ export async function* fetchSitemapLinks(url: URL): AsyncGenerator<string[], voi
         queue.push(newUrl);
         log(`Added URL to queue: ${newUrl.href}`);
       }
-    } else if ('urlset' in parsed) {
+    } else if ("urlset" in parsed) {
       // Yield URLs from the set
       const links = parsed.urlset.url.map((entry) => {
         invariant(entry.loc.length === 1);
@@ -78,7 +78,7 @@ async function fetchUrl(url: URL): Promise<Response> {
     attempts++;
   }
 
-  if (!response?.ok || !`${response.status}`.startsWith('2')) {
+  if (!response?.ok || !`${response.status}`.startsWith("2")) {
     throw new Error(
       `could not fetch URL! url.href=${url.href}, !!response=${!!response}, response.status=${response?.status}`,
     );
