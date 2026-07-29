@@ -1,11 +1,11 @@
-import playwright from 'playwright';
-import invariant from 'tiny-invariant';
-import { z } from 'zod';
+import playwright from "playwright";
+import invariant from "tiny-invariant";
+import { z } from "zod";
 
-import { check } from '@patricktree/commons-ecma/util/assert';
-import { binaryUtils } from '@patricktree/commons-node/utils/binary';
+import { check } from "@patricktree/commons-ecma/util/assert";
+import { binaryUtils } from "@patricktree/commons-node/utils/binary";
 
-import { fetchFaviconURLs } from '#pkg/favicon.js';
+import { fetchFaviconURLs } from "#pkg/favicon.js";
 
 export const schema_faviconsForWebsites = z.object({
   websites: z.record(
@@ -25,13 +25,13 @@ export const schema_faviconsForWebsites = z.object({
 export type FaviconsForWebsites = z.infer<typeof schema_faviconsForWebsites>;
 
 export async function fetchFavicons(hrefs: string[]): Promise<FaviconsForWebsites> {
-  console.log('Preparation: start browser');
+  console.log("Preparation: start browser");
   const browser = await initializeBrowserInstance();
 
   console.log(
-    'Step #1: Use puppeteer to go to every href and fetch the URLs for both its light favicon and dark favicon',
+    "Step #1: Use puppeteer to go to every href and fetch the URLs for both its light favicon and dark favicon",
   );
-  const websites: FaviconsForWebsites['websites'] = {};
+  const websites: FaviconsForWebsites["websites"] = {};
   for (const href of hrefs) {
     console.log(`Fetching favicon URLs for ${href}`);
     const faviconURLs = await fetchFaviconURLs(new URL(href), { browser });
@@ -43,7 +43,7 @@ export async function fetchFavicons(hrefs: string[]): Promise<FaviconsForWebsite
     };
   }
 
-  console.log('Step #2: Gather a list of favicon URLs we need to fetch (with duplicates removed)');
+  console.log("Step #2: Gather a list of favicon URLs we need to fetch (with duplicates removed)");
   const allIconURLs: Array<{ url: URL; sources: Set<string> }> = [];
   function addIconTarget(iconURL: string, websiteHref: string) {
     const existing = allIconURLs.find((entry) => entry.url.href === iconURL);
@@ -63,8 +63,8 @@ export async function fetchFavicons(hrefs: string[]): Promise<FaviconsForWebsite
     }
   }
 
-  console.log('Step #3: Go to every favicon URL and store the favicon as a data URL');
-  const icons: FaviconsForWebsites['icons'] = {};
+  console.log("Step #3: Go to every favicon URL and store the favicon as a data URL");
+  const icons: FaviconsForWebsites["icons"] = {};
   for (const { url, sources } of allIconURLs) {
     console.log(`Fetching favicon from ${url.href}`);
     try {
@@ -73,12 +73,12 @@ export async function fetchFavicons(hrefs: string[]): Promise<FaviconsForWebsite
       const dataURL = await binaryUtils.convertBlobToDataURL(blob);
       icons[url.href] = { dataURL };
     } catch (error) {
-      const sourcesText = [...sources].join(', ');
+      const sourcesText = [...sources].join(", ");
       console.error(`Failed to fetch favicon from ${url.href} (source: ${sourcesText})`, error);
     }
   }
 
-  console.log('Step #4: Close the puppeteer browser');
+  console.log("Step #4: Close the puppeteer browser");
   await browser.close();
   return {
     websites,
@@ -87,10 +87,10 @@ export async function fetchFavicons(hrefs: string[]): Promise<FaviconsForWebsite
 }
 
 async function initializeBrowserInstance() {
-  console.log('Initializing browser instance');
+  console.log("Initializing browser instance");
   const launchOptions: playwright.LaunchOptions = {
     headless: true,
-    args: ['--no-sandbox'],
+    args: ["--no-sandbox"],
   };
   return await playwright.chromium.launch(launchOptions);
 }
@@ -109,7 +109,7 @@ async function fetchUrl(url: URL): Promise<Response> {
     attempts++;
   }
 
-  if (!response?.ok || !`${response.status}`.startsWith('2')) {
+  if (!response?.ok || !`${response.status}`.startsWith("2")) {
     throw new Error(
       `could not fetch URL! url.href=${url.href}, !!response=${!!response}, response.status=${response?.status}`,
     );

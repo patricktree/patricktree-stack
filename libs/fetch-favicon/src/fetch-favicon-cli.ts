@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 /* eslint-disable n/no-process-exit -- is a CLI */
 
-import * as commander from '@commander-js/extra-typings';
-import { writeFile } from 'node:fs/promises';
+import * as commander from "@commander-js/extra-typings";
+import { writeFile } from "node:fs/promises";
 
-import { fetchFavicons } from '#pkg/index.js';
+import { fetchFavicons } from "#pkg/index.js";
 
 const program = new commander.Command()
-  .name('fetch-favicon')
-  .addArgument(new commander.Argument('[url...]'))
-  .addOption(new commander.Option('-o, --output <path>', 'Write JSON output to a file'))
-  .addOption(new commander.Option('--stdin', 'Read URLs from stdin (whitespace-separated)'))
-  .addOption(new commander.Option('--no-pretty', 'Minify JSON output'));
+  .name("fetch-favicon")
+  .addArgument(new commander.Argument("[url...]"))
+  .addOption(new commander.Option("-o, --output <path>", "Write JSON output to a file"))
+  .addOption(new commander.Option("--stdin", "Read URLs from stdin (whitespace-separated)"))
+  .addOption(new commander.Option("--no-pretty", "Minify JSON output"));
 
 program.parse();
 
@@ -31,7 +31,7 @@ const result = await fetchFavicons(normalizedHrefs);
 const json = JSON.stringify(result, null, options.pretty ? 2 : 0);
 
 if (options.output) {
-  await writeFile(options.output, `${json}\n`, 'utf8');
+  await writeFile(options.output, `${json}\n`, "utf8");
 } else {
   console.log(json);
 }
@@ -41,5 +41,5 @@ async function readStdinUrls(): Promise<string[]> {
   for await (const chunk of process.stdin) {
     chunks.push(String(chunk));
   }
-  return chunks.join('').split(/\s+/).filter(Boolean);
+  return chunks.join("").split(/\s+/).filter(Boolean);
 }
