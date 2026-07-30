@@ -1,5 +1,17 @@
 # @patricktree/fetch-favicon
 
+## 1.3.4
+
+### Patch Changes
+
+- 9183e69: Build the published output with TypeScript 6 (`@typescript/typescript6`) instead of TypeScript 5.9. The compiler options and the ES2018 target are unchanged, so the emitted API is the same.
+
+  `@patricktree/codemod-rewrite-module-specifiers-to-full-paths` additionally drops its unused `@patricktree/commons-ecma` dependency.
+
+- Updated dependencies [9183e69]
+  - @patricktree/commons-ecma@3.2.1
+  - @patricktree/commons-node@3.1.3
+
 ## 1.3.3
 
 ### Patch Changes
