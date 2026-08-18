@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    /* Modules */
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "types": ["./worker-configuration.d.ts", "node"],
+
+    /* Emit */
+    "noEmit": true,
+
+    /* Language and Environment */
+    "target": "ES2024"
+  }
+}
