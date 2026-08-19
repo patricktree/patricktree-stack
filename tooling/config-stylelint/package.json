@@ -1,0 +1,14 @@
+{
+  "name": "@patricktree-stack/config-stylelint",
+  "private": true,
+  "files": [
+    "stylelint.config.cjs"
+  ],
+  "dependencies": {
+    "postcss": "catalog:",
+    "postcss-styled-syntax": "catalog:",
+    "stylelint": "catalog:",
+    "stylelint-config-recess-order": "catalog:",
+    "stylelint-config-standard": "catalog:"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "@patricktree-stack/config-wyw-in-js",
+  "private": true,
+  "files": [
+    "*.cjs"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    /* Emit */
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
+    "noEmit": false,
+    "sourceMap": false,
+
+    /* Projects */
+    "composite": true
+  }
+}

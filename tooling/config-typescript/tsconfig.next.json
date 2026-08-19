@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    /* Modules */
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+
+    /* Emit */
+    "noEmit": true,
+
+    /* JavaScript Support */
+    "allowJs": true,
+
+    /* Language and Environment */
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "jsx": "preserve",
+
+    /* Editor Support */
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "extends": [
+    "@patricktree-stack/config-typescript/tsconfig.defaults.json",
+    "@patricktree-stack/config-typescript/tsconfig.emit-js-and-declarations.json"
+  ],
+  "compilerOptions": {
+    /* Modules */
+    "rootDir": "./src",
+
+    /* Emit */
+    "outDir": "./dist",
+    "sourceMap": true,
+
+    /* Language and Environment */
+    "jsx": "preserve"
+  },
+  "include": ["src/**/*"]
+}
