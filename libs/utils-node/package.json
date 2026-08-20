@@ -31,6 +31,9 @@
     "turbo:lint": "oxlint --type-aware --max-warnings 0 .",
     "turbo:lint:fix": "pnpm run turbo:lint --fix"
   },
+  "dependencies": {
+    "exit-hook": "^5.1.0"
+  },
   "devDependencies": {
     "@patricktree-stack/config-oxlint": "workspace:*",
     "@patricktree-stack/config-typescript": "workspace:*",

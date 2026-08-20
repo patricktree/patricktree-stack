@@ -1,7 +1,8 @@
 import type { Attributes } from "@opentelemetry/api";
 import { logs, SeverityNumber } from "@opentelemetry/api-logs";
-import { serializeErrorWithCause } from "@patricktree/commons-ecma/util/error";
-import { jsonUtil } from "@patricktree/commons-ecma/util/json";
+
+import { errorUtils } from "@patricktree-stack/utils-ecma/error.utils";
+import { jsonUtil } from "@patricktree-stack/utils-ecma/json.utils";
 
 export type LogAttributes = Attributes;
 
@@ -114,7 +115,7 @@ function resolveLogArguments(
 function serializeErrorAttributes(error: unknown) {
   let errorToUse;
   if (error instanceof Error) {
-    errorToUse = serializeErrorWithCause(error);
+    errorToUse = errorUtils.serializeErrorWithCause(error);
   } else {
     errorToUse = error;
   }

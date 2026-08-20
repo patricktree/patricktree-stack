@@ -34,7 +34,7 @@
   "dependencies": {
     "@opentelemetry/api": "catalog:o11y",
     "@opentelemetry/api-logs": "catalog:o11y",
-    "@patricktree/commons-ecma": "^3.1.1"
+    "@patricktree-stack/utils-ecma": "workspace:*"
   },
   "devDependencies": {
     "@patricktree-stack/config-oxlint": "workspace:*",

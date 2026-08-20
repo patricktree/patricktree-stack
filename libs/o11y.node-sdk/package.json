@@ -35,7 +35,7 @@
     "@opentelemetry/api": "catalog:o11y",
     "@opentelemetry/sdk-logs": "catalog:o11y",
     "@opentelemetry/sdk-node": "catalog:o11y",
-    "@patricktree/commons-node": "^3.1.1"
+    "@patricktree-stack/utils-node": "workspace:*"
   },
   "devDependencies": {
     "@patricktree-stack/config-oxlint": "workspace:*",

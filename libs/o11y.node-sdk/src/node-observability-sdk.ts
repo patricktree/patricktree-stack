@@ -1,6 +1,7 @@
 import { ConsoleLogRecordExporter, SimpleLogRecordProcessor } from "@opentelemetry/sdk-logs";
 import { NodeSDK } from "@opentelemetry/sdk-node";
-import { processUtil } from "@patricktree/commons-node/utils/process";
+
+import { processUtil } from "@patricktree-stack/utils-node/process.utils";
 
 const OBSERVABILITY_SHUTDOWN_WAIT_MS = 5_000;
 
