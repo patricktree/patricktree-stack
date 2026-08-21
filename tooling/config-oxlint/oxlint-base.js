@@ -3,6 +3,8 @@
 import { defineConfig } from "oxlint";
 
 export const config = defineConfig({
+  /* generated files (e.g. TanStack Router) are owned by their generators and should not be modified by project tooling */
+  ignorePatterns: ["**/*.gen.ts"],
   categories: {
     correctness: "error",
     suspicious: "error",

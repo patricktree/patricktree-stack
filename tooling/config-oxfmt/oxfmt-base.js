@@ -8,6 +8,8 @@ import { defineConfig } from "oxfmt";
 export const createBaseConfig = (opts) => {
   const config = defineConfig({
     ignorePatterns: [
+      /* generated files (e.g. TanStack Router) are owned by their generators and should not be modified by project tooling */
+      "**/*.gen.ts",
       /* pnpm-workspace.yaml is managed by pnpm */
       "/pnpm-workspace.yaml",
     ],
