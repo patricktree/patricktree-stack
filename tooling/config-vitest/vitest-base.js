@@ -26,5 +26,28 @@ export const config = defineConfig({
           ],
         ]
       : ["default"],
+
+    coverage: {
+      /**
+       * Include unimported source modules so coverage represents the complete package rather than
+       * only the modules reached by the test suite. The extension matrix also supports custom
+       * transforms for variants such as `.mtsx` and `.ctsx`.
+       *
+       * See {@link https://vitest.dev/config/coverage.html#coverage-include}.
+       */
+      include: ["src/**/*.{js,jsx,cjs,cjsx,mjs,mjsx,ts,tsx,cts,ctsx,mts,mtsx}"],
+
+      /** Tests and type declarations do not contribute executable production behavior. */
+      exclude: [
+        "src/**/*.{test,spec}.{js,jsx,cjs,cjsx,mjs,mjsx,ts,tsx,cts,ctsx,mts,mtsx}",
+        "src/**/*.d.{ts,tsx,cts,ctsx,mts,mtsx}",
+      ],
+
+      /** Use the runtime's native coverage data without adding an instrumentation transform. */
+      provider: "v8",
+
+      /** Support terminal feedback, machine-readable processing, and local browser inspection. */
+      reporter: ["text", "json", "html"],
+    },
   },
 });
