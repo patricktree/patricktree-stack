@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "customConditions": ["@patricktree-stack/vitest"],
     /* completely disable emit */
     "declaration": false,
     "declarationMap": false,

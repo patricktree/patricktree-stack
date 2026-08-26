@@ -3,6 +3,11 @@
 import { defineConfig } from "vitest/config";
 
 export const config = defineConfig({
+  ssr: {
+    resolve: {
+      conditions: ["@patricktree-stack/vitest", "import", "default"],
+    },
+  },
   test: {
     /**
      * By default we should write tests which don't rely on side effects and properly cleanup state;
