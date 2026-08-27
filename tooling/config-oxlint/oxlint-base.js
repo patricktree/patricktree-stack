@@ -24,6 +24,7 @@ export const config = defineConfig({
   ],
   jsPlugins: ["eslint-plugin-react-you-might-not-need-an-effect"],
   rules: {
+    complexity: "error",
     "no-restricted-globals": [
       "error",
       {
