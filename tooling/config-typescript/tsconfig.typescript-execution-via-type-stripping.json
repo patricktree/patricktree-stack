@@ -1,4 +1,6 @@
 {
+  /* see https://nodejs.org/api/typescript.html#type-stripping */
+
   "compilerOptions": {
     /* Modules */
     "allowImportingTsExtensions": true,
