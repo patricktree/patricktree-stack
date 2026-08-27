@@ -1,12 +1,19 @@
 {
   "compilerOptions": {
-    "customConditions": ["@patricktree-stack/vitest"],
     /* completely disable emit */
     "declaration": false,
     "declarationMap": false,
     "emitDeclarationOnly": false,
     "noEmit": true,
     "sourceMap": false,
-    "composite": false
+    "composite": false,
+
+    /*
+     * Include the Vitest user condition when resolving package imports and exports so type checking resolves the
+     * same test-only targets as the test runtime.
+     *
+     * See also vitest-base.js for the runtime configuration.
+     */
+    "customConditions": ["@patricktree-stack/vitest"]
   }
 }

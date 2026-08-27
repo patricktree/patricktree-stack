@@ -5,6 +5,13 @@ import { defineConfig } from "vitest/config";
 export const config = defineConfig({
   ssr: {
     resolve: {
+      /**
+       * Include the Vitest user condition when resolving package imports and exports so packages
+       * can expose test-only targets.
+       *
+       * See {@link https://nodejs.org/api/packages.html#resolving-user-conditions} and
+       * {@link https://vitest.dev/guide/common-errors.html#custom-package-conditions-are-not-resolved}.
+       */
       conditions: ["@patricktree-stack/vitest", "import", "default"],
     },
   },
