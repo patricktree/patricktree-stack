@@ -1,0 +1,119 @@
+import playwright from "playwright";
+import invariant from "tiny-invariant";
+import { z } from "zod";
+
+import { check } from "@patricktree-stack/utils-ecma/assert.utils";
+import { binaryUtils } from "@patricktree-stack/utils-node/binary.utils";
+
+import { fetchFaviconURLs } from "#src/favicon.ts";
+
+export const schema_faviconsForWebsites = z.object({
+  websites: z.record(
+    z.string().url(),
+    z
+      .object({
+        iconURLs: z.object({
+          light: z.string().url().optional(),
+          dark: z.string().url().optional(),
+        }),
+      })
+      .optional(),
+  ),
+
+  icons: z.record(z.string().url(), z.object({ dataURL: z.string().min(1) }).optional()),
+});
+export type FaviconsForWebsites = z.infer<typeof schema_faviconsForWebsites>;
+
+export async function fetchFavicons(hrefs: string[]): Promise<FaviconsForWebsites> {
+  console.log("Preparation: start browser");
+  const browser = await initializeBrowserInstance();
+
+  console.log(
+    "Step #1: Use puppeteer to go to every href and fetch the URLs for both its light favicon and dark favicon",
+  );
+  const websites: FaviconsForWebsites["websites"] = {};
+  for (const href of hrefs) {
+    console.log(`Fetching favicon URLs for ${href}`);
+    const faviconURLs = await fetchFaviconURLs(new URL(href), { browser });
+    websites[href] = {
+      iconURLs: {
+        light: faviconURLs.icons.light?.href,
+        dark: faviconURLs.icons.dark?.href,
+      },
+    };
+  }
+
+  console.log("Step #2: Gather a list of favicon URLs we need to fetch (with duplicates removed)");
+  const allIconURLs: Array<{ url: URL; sources: Set<string> }> = [];
+  function addIconTarget(iconURL: string, websiteHref: string) {
+    const existing = allIconURLs.find((entry) => entry.url.href === iconURL);
+    if (existing) {
+      existing.sources.add(websiteHref);
+      return;
+    }
+    allIconURLs.push({ url: new URL(iconURL), sources: new Set([websiteHref]) });
+  }
+  for (const [websiteHref, entry] of Object.entries(websites)) {
+    invariant(entry);
+    if (check.isNonEmptyString(entry.iconURLs.light)) {
+      addIconTarget(entry.iconURLs.light, websiteHref);
+    }
+    if (check.isNonEmptyString(entry.iconURLs.dark)) {
+      addIconTarget(entry.iconURLs.dark, websiteHref);
+    }
+  }
+
+  console.log("Step #3: Go to every favicon URL and store the favicon as a data URL");
+  const icons: FaviconsForWebsites["icons"] = {};
+  for (const { url, sources } of allIconURLs) {
+    console.log(`Fetching favicon from ${url.href}`);
+    try {
+      const response = await fetchUrl(url);
+      const blob = await response.blob();
+      const dataURL = await binaryUtils.convertBlobToDataURL(blob);
+      icons[url.href] = { dataURL };
+    } catch (error) {
+      const sourcesText = [...sources].join(", ");
+      console.error(`Failed to fetch favicon from ${url.href} (source: ${sourcesText})`, error);
+    }
+  }
+
+  console.log("Step #4: Close the puppeteer browser");
+  await browser.close();
+  return {
+    websites,
+    icons,
+  };
+}
+
+async function initializeBrowserInstance() {
+  console.log("Initializing browser instance");
+  const launchOptions: playwright.LaunchOptions = {
+    headless: true,
+    args: ["--no-sandbox"],
+  };
+  return await playwright.chromium.launch(launchOptions);
+}
+
+async function fetchUrl(url: URL): Promise<Response> {
+  console.log(`Fetching URL: ${url.href}`);
+  let attempts = 1;
+  let response: Response | undefined;
+  while (attempts <= 3 && !response) {
+    try {
+      console.log(`Attempt ${attempts} for ${url.href}`);
+      response = await fetch(url.href);
+    } catch {
+      console.log(`Attempt ${attempts} failed for ${url.href}`);
+    }
+    attempts++;
+  }
+
+  if (!response?.ok || !`${response.status}`.startsWith("2")) {
+    throw new Error(
+      `could not fetch URL! url.href=${url.href}, !!response=${!!response}, response.status=${response?.status}`,
+    );
+  }
+
+  return response;
+}
