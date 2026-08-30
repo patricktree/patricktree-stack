@@ -2,6 +2,9 @@
   "name": "@patricktree-stack/config-playwright",
   "private": true,
   "type": "module",
+  "exports": {
+    "./playwright-docker": "./playwright-docker.ts"
+  },
   "dependencies": {
     "@playwright/test": "catalog:"
   }
