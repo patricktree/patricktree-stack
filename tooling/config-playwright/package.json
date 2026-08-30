@@ -2,7 +2,7 @@
   "name": "@patricktree-stack/config-playwright",
   "private": true,
   "type": "module",
-  "peerDependencies": {
-    "@playwright/test": ">=1.58.0 <2"
+  "dependencies": {
+    "@playwright/test": "catalog:"
   }
 }
