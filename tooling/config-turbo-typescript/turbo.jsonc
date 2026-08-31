@@ -10,11 +10,21 @@
     "turbo:lint": {
       "cache": true,
       "dependsOn": ["^turbo:build"],
+      "inputs": [
+        "$TURBO_EXTENDS$",
+        "$TURBO_ROOT$/.patricktree-stack/tooling/config-oxlint/**",
+        "$TURBO_ROOT$/tooling/config-oxlint/**",
+      ],
       "outputs": [],
     },
     "turbo:lint:fix": {
       "cache": true,
       "dependsOn": ["^turbo:build"],
+      "inputs": [
+        "$TURBO_EXTENDS$",
+        "$TURBO_ROOT$/.patricktree-stack/tooling/config-oxlint/**",
+        "$TURBO_ROOT$/tooling/config-oxlint/**",
+      ],
       "outputs": ["src/**"],
     },
     "turbo:test": {
