@@ -22,7 +22,12 @@ export const config = defineConfig({
     "promise",
     "vitest",
   ],
-  jsPlugins: ["eslint-plugin-react-you-might-not-need-an-effect"],
+  jsPlugins: [
+    {
+      name: "react-you-might-not-need-an-effect",
+      specifier: import.meta.resolve("eslint-plugin-react-you-might-not-need-an-effect"),
+    },
+  ],
   rules: {
     complexity: "error",
     "no-restricted-globals": [
