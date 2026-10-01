@@ -32,9 +32,10 @@ function sequence<const FromInclusive extends number, const ToInclusive extends 
 }): Array<Range<FromInclusive, Increment<ToInclusive>>> {
   /* The arithmetic below produces exactly the numbers described by `Range<...>`, but TypeScript
      cannot narrow `number` to that literal union on its own. */
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-  return Array.from(
+  const result = Array.from(
     { length: options.toInclusive - options.fromInclusive + 1 },
     (_, index) => index + options.fromInclusive,
-  ) as Array<Range<FromInclusive, Increment<ToInclusive>>>;
+  );
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  return result as Array<Range<FromInclusive, Increment<ToInclusive>>>;
 }
