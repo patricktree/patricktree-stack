@@ -1,0 +1,13 @@
+{
+  /* for https://capacitorjs.com/ */
+
+  "compilerOptions": {
+    /* completely disable emit */
+    "declaration": false,
+    "declarationMap": false,
+    "emitDeclarationOnly": false,
+    "noEmit": true,
+    "sourceMap": false,
+    "composite": false
+  }
+}
