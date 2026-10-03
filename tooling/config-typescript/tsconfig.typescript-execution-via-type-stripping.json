@@ -4,7 +4,6 @@
   "compilerOptions": {
     /* Modules */
     "allowImportingTsExtensions": true,
-    "rewriteRelativeImportExtensions": true,
 
     /* Interop Constraints */
     "erasableSyntaxOnly": true,

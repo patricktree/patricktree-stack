@@ -6,7 +6,6 @@
   ],
   "compilerOptions": {
     /* Modules */
-    "rootDir": "./test",
     "types": ["node"]
   },
   "include": ["test/**/*", "**/*.test.ts"],
