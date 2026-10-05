@@ -1,6 +1,7 @@
 import type { ObjectLiteral } from "#src/types.ts";
 
 export const check = {
+  assert,
   assertIsUnreachable,
   isNullish,
   isNotNullish,
@@ -10,6 +11,12 @@ export const check = {
   isEmptyObject,
   isValueInEnum,
 };
+
+export function assert(value: unknown, message?: string | Error): asserts value {
+  if (!value) {
+    throw message instanceof Error ? message : new Error(message ?? "Assertion failed");
+  }
+}
 
 // https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking
 function assertIsUnreachable(value?: never): never {
