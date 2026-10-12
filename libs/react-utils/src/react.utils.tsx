@@ -1,5 +1,4 @@
 import React from "react";
-import * as ReactIs from "react-is";
 
 export const reactUtils = { createContext, getNodeText };
 
@@ -31,17 +30,26 @@ function createContext<ContextValue>(name: string) {
   return { useContextValue, Provider };
 }
 
+function subscribeToNothing() {
+  return () => {};
+}
+
+function getIsMountedClientSnapshot() {
+  return true;
+}
+
+function getIsMountedServerSnapshot() {
+  return false;
+}
+
 export function useIsMounted() {
-  const [isMounted, setIsMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    /* this is the SSR hydration idiom: the value has to start out `false` so that server and client
-       render identically, and only flip to `true` after the client has mounted */
-    // oxlint-disable-next-line react-you-might-not-need-an-effect/no-initialize-state
-    setIsMounted(true);
-  }, []);
-
-  return isMounted;
+  /* the server snapshot is also used while hydrating, so server and client render identically and
+     the value only flips to `true` after the client has mounted */
+  return React.useSyncExternalStore(
+    subscribeToNothing,
+    getIsMountedClientSnapshot,
+    getIsMountedServerSnapshot,
+  );
 }
 
 /** Based on https://stackoverflow.com/a/60564620/1700319 */
@@ -55,7 +63,7 @@ function getNodeText(node: React.ReactNode): string {
   if (Array.isArray(node)) {
     return node.map((childNode: React.ReactNode) => getNodeText(childNode)).join("");
   }
-  if (ReactIs.isElement(node)) {
+  if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
     return getNodeText(node.props.children);
   }
   throw new Error(`should not get here`);
@@ -71,39 +79,27 @@ function getNodeText(node: React.ReactNode): string {
  * @returns If `window` is not defined, `SSR`; otherwise whether the query currently matches.
  */
 export function useMediaMatch(query: string): boolean | "SSR" {
-  const matchMedia = React.useMemo<MediaQueryList | undefined>(() => {
-    /* explicit usage of `window` here */
-    if (typeof window === "undefined") {
-      return undefined;
-    }
-    return window.matchMedia(query);
-  }, [query]);
-  const [matches, setMatches] = React.useState<boolean | "SSR">(() => {
-    if (!matchMedia) {
-      return "SSR";
-    }
-    return matchMedia.matches;
-  });
+  const subscribe = React.useCallback(
+    (onStoreChange: () => void) => {
+      const matchMedia = window.matchMedia(query);
+      if (matchMedia.addEventListener) {
+        matchMedia.addEventListener("change", onStoreChange);
+        return () => matchMedia.removeEventListener("change", onStoreChange);
+      }
+      matchMedia.addListener(onStoreChange);
+      return () => matchMedia.removeListener(onStoreChange);
+    },
+    [query],
+  );
+  const getClientSnapshot = React.useCallback(() => window.matchMedia(query).matches, [query]);
 
-  React.useEffect(() => {
-    if (!matchMedia) {
-      return undefined;
-    }
+  return React.useSyncExternalStore<boolean | "SSR">(
+    subscribe,
+    getClientSnapshot,
+    getMediaMatchServerSnapshot,
+  );
+}
 
-    // oxlint-disable-next-line react-you-might-not-need-an-effect/no-external-store-subscription -- synchronize the initial value before subscribing to the MediaQueryList compatibility events
-    setMatches(matchMedia.matches);
-
-    function onMatchMediaChangeListener(event: MediaQueryListEventMap["change"]) {
-      setMatches(event.matches);
-    }
-
-    if (matchMedia.addEventListener) {
-      matchMedia.addEventListener("change", onMatchMediaChangeListener);
-      return () => matchMedia.removeEventListener("change", onMatchMediaChangeListener);
-    }
-    matchMedia.addListener(onMatchMediaChangeListener);
-    return () => matchMedia.removeListener(onMatchMediaChangeListener);
-  }, [matchMedia]);
-
-  return matches;
+function getMediaMatchServerSnapshot() {
+  return "SSR" as const;
 }
