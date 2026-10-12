@@ -7,11 +7,6 @@ export function createNextConfig(nextConfig = {}) {
     distDir: "dist",
     reactStrictMode: true,
 
-    eslint: {
-      dirs: ["."],
-      ignoreDuringBuilds: true,
-    },
-
     typescript: {
       tsconfigPath: "./tsconfig.next.json",
       ignoreBuildErrors: true,
