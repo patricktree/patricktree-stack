@@ -30,26 +30,17 @@ function createContext<ContextValue>(name: string) {
   return { useContextValue, Provider };
 }
 
-function subscribeToNothing() {
-  return () => {};
-}
-
-function getIsMountedClientSnapshot() {
-  return true;
-}
-
-function getIsMountedServerSnapshot() {
-  return false;
-}
-
 export function useIsMounted() {
-  /* the server snapshot is also used while hydrating, so server and client render identically and
-     the value only flips to `true` after the client has mounted */
-  return React.useSyncExternalStore(
-    subscribeToNothing,
-    getIsMountedClientSnapshot,
-    getIsMountedServerSnapshot,
-  );
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    /* this is the SSR hydration idiom: the value has to start out `false` so that server and client
+       render identically, and only flip to `true` after the client has mounted */
+    // oxlint-disable-next-line react/set-state-in-effect, react-you-might-not-need-an-effect/no-initialize-state
+    setIsMounted(true);
+  }, []);
+
+  return isMounted;
 }
 
 /** Based on https://stackoverflow.com/a/60564620/1700319 */
