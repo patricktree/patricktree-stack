@@ -9,6 +9,7 @@
     "postcss-styled-syntax": "catalog:",
     "stylelint": "catalog:",
     "stylelint-config-recess-order": "catalog:",
-    "stylelint-config-standard": "catalog:"
+    "stylelint-config-standard": "catalog:",
+    "stylelint-order": "catalog:"
   }
 }
