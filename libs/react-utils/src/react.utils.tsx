@@ -79,27 +79,39 @@ function getNodeText(node: React.ReactNode): string {
  * @returns If `window` is not defined, `SSR`; otherwise whether the query currently matches.
  */
 export function useMediaMatch(query: string): boolean | "SSR" {
-  const subscribe = React.useCallback(
-    (onStoreChange: () => void) => {
-      const matchMedia = window.matchMedia(query);
-      if (matchMedia.addEventListener) {
-        matchMedia.addEventListener("change", onStoreChange);
-        return () => matchMedia.removeEventListener("change", onStoreChange);
-      }
-      matchMedia.addListener(onStoreChange);
-      return () => matchMedia.removeListener(onStoreChange);
-    },
-    [query],
-  );
-  const getClientSnapshot = React.useCallback(() => window.matchMedia(query).matches, [query]);
+  const matchMedia = React.useMemo<MediaQueryList | undefined>(() => {
+    /* explicit usage of `window` here */
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+    return window.matchMedia(query);
+  }, [query]);
+  const [matches, setMatches] = React.useState<boolean | "SSR">(() => {
+    if (!matchMedia) {
+      return "SSR";
+    }
+    return matchMedia.matches;
+  });
 
-  return React.useSyncExternalStore<boolean | "SSR">(
-    subscribe,
-    getClientSnapshot,
-    getMediaMatchServerSnapshot,
-  );
-}
+  React.useEffect(() => {
+    if (!matchMedia) {
+      return undefined;
+    }
 
-function getMediaMatchServerSnapshot() {
-  return "SSR" as const;
+    // oxlint-disable-next-line react/set-state-in-effect, react-you-might-not-need-an-effect/no-external-store-subscription -- synchronize the initial value before subscribing to the MediaQueryList compatibility events
+    setMatches(matchMedia.matches);
+
+    function onMatchMediaChangeListener(event: MediaQueryListEventMap["change"]) {
+      setMatches(event.matches);
+    }
+
+    if (matchMedia.addEventListener) {
+      matchMedia.addEventListener("change", onMatchMediaChangeListener);
+      return () => matchMedia.removeEventListener("change", onMatchMediaChangeListener);
+    }
+    matchMedia.addListener(onMatchMediaChangeListener);
+    return () => matchMedia.removeListener(onMatchMediaChangeListener);
+  }, [matchMedia]);
+
+  return matches;
 }
