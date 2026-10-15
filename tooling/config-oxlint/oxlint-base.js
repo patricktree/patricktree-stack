@@ -30,6 +30,7 @@ export const config = defineConfig({
   ],
   rules: {
     complexity: "error",
+    curly: ["error", "all"],
     "no-restricted-globals": [
       "error",
       {
