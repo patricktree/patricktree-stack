@@ -54,7 +54,7 @@ export function createPlaywrightDockerConfig({
       ? {
           webServer: {
             // Start Playwright Server in a Docker container so visual assertions are consistent across host operating systems.
-            command: `docker run --rm --init --workdir /home/pwuser --user pwuser --network host mcr.microsoft.com/playwright:v${playwrightVersion}-noble /bin/sh -c "npx -y playwright@${playwrightVersion} run-server --host 0.0.0.0"`,
+            command: createPlaywrightServerCommand(playwrightVersion),
             wait: {
               // Capture the Playwright Server port from stdout via regex (https://playwright.dev/docs/api/class-testconfig#test-config-web-server).
               // eslint-disable-next-line prefer-regex-literals -- Named capture group is interpolated from the environment variable name.
@@ -64,7 +64,8 @@ export function createPlaywrightDockerConfig({
             },
             stdout: "pipe",
             stderr: "pipe",
-            timeout: 30_000,
+            // The first run on a machine builds the server image, which installs Playwright from npm.
+            timeout: 120_000,
             gracefulShutdown: {
               signal: "SIGTERM",
               timeout: 10_000,
@@ -74,6 +75,28 @@ export function createPlaywrightDockerConfig({
         }
       : {}),
   };
+}
+
+/**
+ * Installing Playwright with `npx` on every start took longer than the startup timeout, and longer
+ * still when several test runs started at once. The derived image installs it once per version;
+ * later runs reuse the local image and start in about a second.
+ */
+function createPlaywrightServerCommand(playwrightVersion: string): string {
+  const baseImage = `mcr.microsoft.com/playwright:v${playwrightVersion}-noble`;
+  const serverImage = `patricktree-stack/playwright-server:v${playwrightVersion}`;
+  const dockerfileLines = [
+    `FROM ${baseImage}`,
+    "WORKDIR /opt/playwright-server",
+    `RUN npm install --no-audit --no-fund playwright@${playwrightVersion}`,
+  ];
+  const buildServerImage = `printf '%s\\n' ${dockerfileLines.map((line) => `'${line}'`).join(" ")} | docker build --quiet --tag ${serverImage} -`;
+
+  // Concurrent first runs may each build the image; the builds are identical, so either result serves.
+  return [
+    `{ docker image inspect ${serverImage} >/dev/null 2>&1 || ${buildServerImage}; }`,
+    `docker run --rm --init --user pwuser --network host ${serverImage} ./node_modules/.bin/playwright run-server --host 0.0.0.0`,
+  ].join(" && ");
 }
 
 function readInstalledPlaywrightVersion(): string {
