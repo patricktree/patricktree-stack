@@ -13,7 +13,8 @@ API or independent releases.
 ## Contents
 
 - `tooling/` contains shared TypeScript, Oxfmt, Oxlint, Turborepo, Vitest,
-  Next.js, Stylelint, and WyW-in-JS configuration, plus monorepo tooling.
+  Next.js, Stylelint, and WyW-in-JS configuration, plus monorepo tooling and a
+  Mermaid diagram check.
 - `libs/` contains reusable ECMA, Node.js, React, observability, favicon, and
   sitemap utilities.
 - `qa-utils/` contains shared test helpers.
