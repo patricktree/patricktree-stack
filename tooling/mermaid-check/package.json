@@ -23,11 +23,11 @@
     "clean": "del-cli --dot=true \"dist\" \"*.tsbuildinfo\"",
     "lint": "turbo run turbo:lint",
     "lint:fix": "turbo run turbo:lint:fix",
-    "test": "node --test \"test/**/*.test.ts\"",
+    "test:vitest": "vitest run",
     "turbo:build": "tsc --build ./tsconfig.json",
     "turbo:lint": "oxlint --type-aware --max-warnings 0 .",
     "turbo:lint:fix": "pnpm run turbo:lint --fix",
-    "turbo:test": "pnpm run test"
+    "turbo:test": "pnpm run test:vitest"
   },
   "dependencies": {
     "happy-dom": "^20.14.6",
@@ -36,10 +36,13 @@
   "devDependencies": {
     "@patricktree-stack/config-oxlint": "workspace:*",
     "@patricktree-stack/config-typescript": "workspace:*",
+    "@patricktree-stack/config-vitest": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   }
 }
