@@ -17,6 +17,8 @@ Add the project to the consuming repository's `pnpm-workspace.yaml` and the root
 }
 ```
 
+The project runs its own tests with Vitest, so the consumer also needs `.patricktree-stack/tooling/config-vitest` in its workspace and `vite` and `vitest` entries in its default catalog, like the other catalog dependencies of stack projects.
+
 Without arguments, `mermaid-check` checks every Markdown file below the current directory that Git tracks or would track, skipping ignored and deleted files; Git lists a submodule as a single entry, so `.patricktree-stack` itself is skipped. Pass file paths to check only those files.
 
 Each failure prints `file:line: parser error`, where the line points into the Markdown file, and the command exits with status 1. Errors without a line, such as an unknown diagram type, point at the opening fence.
