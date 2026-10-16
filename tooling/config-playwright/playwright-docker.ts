@@ -1,10 +1,24 @@
 // See https://patricktree.me/blog/consistent-visual-assertions-via-playwright-server-in-docker for the rationale behind running Playwright Server in Docker.
 import type { PlaywrightTestConfig } from "@playwright/test";
+import crypto from "node:crypto";
 import module from "node:module";
 import os from "node:os";
 
 const PLAYWRIGHT_SERVER_PORT_ENV_VAR_NAME = "PLAYWRIGHT_SERVER_PORT";
 const DEFAULT_MAX_WORKERS = 4;
+const PLAYWRIGHT_SERVER_RUN_ID_ENV_VAR_NAME = "PLAYWRIGHT_SERVER_RUN_ID";
+
+export const PLAYWRIGHT_SERVER_RUN_LABEL = "patricktree-stack.playwright-server";
+export const PLAYWRIGHT_SERVER_DIRECTORY_LABEL = "patricktree-stack.playwright-server.directory";
+
+/**
+ * Labels the Playwright Server container of this test run, so cleanup can target it with `docker ps
+ * --filter label=patricktree-stack.playwright-server=<id>` without touching the servers of
+ * concurrent runs. Set PLAYWRIGHT_SERVER_RUN_ID to know the id before the run starts.
+ */
+export const PLAYWRIGHT_SERVER_RUN_ID =
+  // oxlint-disable-next-line node/no-process-env -- Lets a caller pick the id it later filters containers by.
+  process.env[PLAYWRIGHT_SERVER_RUN_ID_ENV_VAR_NAME] ?? crypto.randomUUID();
 
 export type CreatePlaywrightDockerConfigOptions = {
   isCI?: boolean;
@@ -94,8 +108,17 @@ function createPlaywrightServerCommand(playwrightVersion: string): string {
   // Concurrent first runs may each build the image; the builds are identical, so either result serves.
   return [
     `{ docker image inspect ${serverImage} >/dev/null 2>&1 || ${buildServerImage}; }`,
-    `docker run --rm --init --user pwuser --network host ${serverImage} ./node_modules/.bin/playwright run-server --host 0.0.0.0`,
+    [
+      "docker run --rm --init --user pwuser --network host",
+      `--label ${quoteShellArgument(`${PLAYWRIGHT_SERVER_RUN_LABEL}=${PLAYWRIGHT_SERVER_RUN_ID}`)}`,
+      `--label ${quoteShellArgument(`${PLAYWRIGHT_SERVER_DIRECTORY_LABEL}=${process.cwd()}`)}`,
+      `${serverImage} ./node_modules/.bin/playwright run-server --host 0.0.0.0`,
+    ].join(" "),
   ].join(" && ");
+}
+
+function quoteShellArgument(argument: string): string {
+  return `'${argument.replaceAll("'", String.raw`'\''`)}'`;
 }
 
 function readInstalledPlaywrightVersion(): string {
