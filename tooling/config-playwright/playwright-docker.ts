@@ -10,7 +10,6 @@ export type CreatePlaywrightDockerConfigOptions = {
   isCI?: boolean;
   isDebuggingSession?: boolean;
   maxWorkers?: number;
-  reuseExistingServer?: boolean;
   shouldUseDocker?: boolean;
 };
 
@@ -20,7 +19,6 @@ export function createPlaywrightDockerConfig({
   // oxlint-disable-next-line node/no-process-env -- PWDEBUG is Playwright's standard debugging flag.
   isDebuggingSession = process.env["PWDEBUG"] === "1",
   maxWorkers = DEFAULT_MAX_WORKERS,
-  reuseExistingServer = !isCI,
   shouldUseDocker = !isDebuggingSession,
 }: CreatePlaywrightDockerConfigOptions = {}): PlaywrightTestConfig {
   const playwrightVersion = readInstalledPlaywrightVersion();
@@ -70,7 +68,8 @@ export function createPlaywrightDockerConfig({
               signal: "SIGTERM",
               timeout: 10_000,
             },
-            reuseExistingServer,
+            // Test runs execute concurrently across checkouts, so each run starts its own Playwright Server rather than attaching to another run's.
+            reuseExistingServer: false,
           },
         }
       : {}),
