@@ -38,17 +38,6 @@ export const config = defineConfig({
         message: "Use `Temporal` via polyfill `temporal-polyfill` instead.",
       },
     ],
-    "no-restricted-imports": [
-      "error",
-      {
-        patterns: [
-          {
-            group: ["./**", "../**"],
-            message: "Use subpath imports (`#src/*`, `#test/*`, ...) instead of relative imports.",
-          },
-        ],
-      },
-    ],
     "no-unused-vars": [
       "error",
       {
