@@ -38,6 +38,8 @@ export const config = defineConfig({
         message: "Use `Temporal` via polyfill `temporal-polyfill` instead.",
       },
     ],
+    /* no shared import restrictions; a repository adds its own (for example against relative imports) by spreading this setting into its config, because a repository-level setting replaces this one */
+    "no-restricted-imports": ["error", { patterns: [] }],
     "no-unused-vars": [
       "error",
       {
