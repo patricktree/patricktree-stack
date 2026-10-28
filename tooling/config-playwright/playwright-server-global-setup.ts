@@ -16,22 +16,40 @@ const STARTUP_TIMEOUT_MS = 120_000;
 // Bounds each Docker call other than the image build, so an unresponsive Docker daemon cannot block the run.
 const DOCKER_COMMAND_TIMEOUT_MS = 15_000;
 const RETRY_DELAY_MS = 500;
+const PROBE_TIMEOUT_MS = 2000;
 const IMAGE_DIRECTORY = path.join(import.meta.dirname, "playwright-server-image");
 const IMAGE_FILE_NAMES = ["Dockerfile", "serve.sh"];
 // Must match the activity marker in `serve.sh`, whose idle timer this file resets.
 const ACTIVITY_MARKER_PATH = "/tmp/last-used";
+// Well below the 10-minute idle timeout in `serve.sh`, so a missed heartbeat or two does not matter.
+const HEARTBEAT_INTERVAL_MS = 60_000;
 
 const execFile = util.promisify(childProcess.execFile);
 
-export default async function globalSetup(): Promise<void> {
-  const port = await ensurePlaywrightServer();
+/** Playwright runs the returned function as global teardown. */
+export default async function globalSetup(): Promise<() => void> {
+  const { containerName, port } = await ensurePlaywrightServer();
 
   // Workers inherit the environment of the runner process and read the port in the shared configuration.
   // oxlint-disable-next-line node/no-process-env -- Passes the port from global setup to the workers.
   process.env[PLAYWRIGHT_SERVER_PORT_ENV_VAR_NAME] = String(port);
+
+  // UI and watch mode run global setup once and keep the runner process alive between test runs, so
+  // the runner keeps the container from stopping while no worker is connected. When the runner exits
+  // or crashes, the heartbeat stops and the container's idle timeout takes over.
+  const heartbeat = setInterval(() => {
+    // A failed heartbeat needs no handling: the next one, or the idle timeout, settles it.
+    markContainerAsUsed(containerName).catch(() => {});
+  }, HEARTBEAT_INTERVAL_MS);
+  // Never keeps a finished run from exiting.
+  heartbeat.unref();
+
+  return () => {
+    clearInterval(heartbeat);
+  };
 }
 
-async function ensurePlaywrightServer(): Promise<number> {
+async function ensurePlaywrightServer(): Promise<{ containerName: string; port: number }> {
   const deadline = Date.now() + STARTUP_TIMEOUT_MS;
   const playwrightVersion = readInstalledPlaywrightVersion();
   // The image files hash is part of both names, so changing the image files never attaches a run to
@@ -52,10 +70,18 @@ async function ensurePlaywrightServer(): Promise<number> {
       // The container may be stopping because it was idle; the next iteration then starts a new one.
       const port = await readListeningPort(containerName);
       if (port !== undefined) {
-        await runDocker(["exec", containerName, "touch", ACTIVITY_MARKER_PATH]);
+        await markContainerAsUsed(containerName);
 
         if (await canConnect(port)) {
-          return port;
+          if (await isPlaywrightServer(port)) {
+            return { containerName, port };
+          }
+
+          // On Docker Desktop, host networking puts the server's port in the Linux VM. When a process
+          // on the host already listens on the same port (macOS rapportd, for example), connections to
+          // 127.0.0.1 reach that process instead, so no test run on this machine can use the
+          // container. Removing it makes the next iteration start one on a new port.
+          await runDocker(["rm", "--force", containerName]);
         }
       }
     } catch (error) {
@@ -163,6 +189,11 @@ async function readListeningPort(containerName: string): Promise<number | undefi
   return port === undefined ? undefined : Number(port);
 }
 
+/** Resets the idle timer of `serve.sh` in the container. */
+async function markContainerAsUsed(containerName: string): Promise<void> {
+  await runDocker(["exec", containerName, "touch", ACTIVITY_MARKER_PATH]);
+}
+
 function runDocker(
   args: string[],
   timeoutMs = DOCKER_COMMAND_TIMEOUT_MS,
@@ -185,6 +216,18 @@ function canConnect(port: number): Promise<boolean> {
       resolve(false);
     });
   });
+}
+
+/** Playwright Server answers a plain HTTP request to its root with "Running". */
+async function isPlaywrightServer(port: number): Promise<boolean> {
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/`, {
+      signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
+    });
+    return response.ok && (await response.text()) === "Running";
+  } catch {
+    return false;
+  }
 }
 
 /** Tags the image by its content, so changing the image files builds and runs a new container. */

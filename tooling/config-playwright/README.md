@@ -25,9 +25,9 @@ All test runs on a machine that use the same Playwright version share one Playwr
 
 The first run on a machine builds the image `patricktree-stack/playwright-server:v<version>-<hash>` from [`playwright-server-image`](playwright-server-image/). The hash covers the image files, so changing them builds a new image. Later runs reuse the image.
 
-The container name is derived from the image tag. Docker rejects a second container with the same name, so runs that start at the same time end up with one container. The server listens on a port the operating system assigns, and each run reads it from the container logs.
+The container name is derived from the image tag. Docker rejects a second container with the same name, so runs that start at the same time end up with one container. The server listens on a port the operating system assigns, and each run reads it from the container logs. On Docker Desktop that port is assigned in the Linux VM, so a host process can already hold it; global setup then removes the container and starts a new one on another port.
 
-Test runs never stop the container. It stops itself once no client has been connected for 10 minutes, and `--rm` removes it.
+Test runs never stop the container. It stops itself once no client has been connected for 10 minutes, and `--rm` removes it. While a test runner process is alive, including between runs in UI mode, it sends a heartbeat every minute, so the container does not stop under an open UI. A runner that exits or crashes stops sending heartbeats.
 
 The containers carry the label `patricktree-stack.playwright-server.version=<version>`. List or remove all of them:
 

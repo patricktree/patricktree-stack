@@ -13,6 +13,9 @@ log_file=/tmp/run-server.log
 poll_interval_seconds=10
 
 touch "${activity_marker}"
+# The server's redirect creates the log file in a background process, so `tail` could start first and
+# fail. Creating it here keeps the port line from going missing in `docker logs`.
+: >"${log_file}"
 
 # The server listens on a port the operating system assigns; test runs read it from `docker logs`.
 ./node_modules/.bin/playwright run-server --host 0.0.0.0 >"${log_file}" 2>&1 &
