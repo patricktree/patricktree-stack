@@ -1,12 +1,10 @@
 #!/bin/sh
-# Runs Playwright Server and stops it once no client has been connected for the given number of
-# seconds. Test runs share this container and never stop it themselves, so idleness is the only
-# signal that it is no longer needed. Stopping the server exits the container, and `--rm` removes it.
-#
-# Usage: serve.sh IDLE_TIMEOUT_SECONDS
+# Runs Playwright Server and stops it once no client has been connected for 10 minutes. Test runs
+# share this container and never stop it themselves, so idleness is the only signal that it is no
+# longer needed. Stopping the server exits the container, and `--rm` removes it.
 set -eu
 
-idle_timeout_seconds="${1}"
+idle_timeout_seconds=600
 # Test runs touch this file via `docker exec` (see `ACTIVITY_MARKER_PATH` in the global setup) when
 # they pick this container, so it is not stopped between that moment and the run's first browser
 # connection.

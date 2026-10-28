@@ -11,8 +11,6 @@ import util from "node:util";
 
 export const PLAYWRIGHT_SERVER_PORT_ENV_VAR_NAME = "PLAYWRIGHT_SERVER_PORT";
 const PLAYWRIGHT_SERVER_VERSION_LABEL = "patricktree-stack.playwright-server.version";
-const PLAYWRIGHT_SERVER_IDLE_TIMEOUT_ENV_VAR_NAME = "PLAYWRIGHT_SERVER_IDLE_TIMEOUT_SECONDS";
-const DEFAULT_IDLE_TIMEOUT_SECONDS = 600;
 // The first run on a machine builds the server image, which installs Playwright from npm.
 const STARTUP_TIMEOUT_MS = 120_000;
 // Bounds each Docker call other than the image build, so an unresponsive Docker daemon cannot block the run.
@@ -136,7 +134,6 @@ async function startContainer({
       `${PLAYWRIGHT_SERVER_VERSION_LABEL}=${playwrightVersion}`,
       image,
       "./serve.sh",
-      String(readIdleTimeoutSeconds()),
     ]);
   } catch (error) {
     // Another test run started the container first.
@@ -188,23 +185,6 @@ function canConnect(port: number): Promise<boolean> {
       resolve(false);
     });
   });
-}
-
-function readIdleTimeoutSeconds(): number {
-  // oxlint-disable-next-line node/no-process-env -- The idle timeout belongs to the machine-wide container, not to one repository's configuration.
-  const rawIdleTimeoutSeconds = process.env[PLAYWRIGHT_SERVER_IDLE_TIMEOUT_ENV_VAR_NAME];
-  if (rawIdleTimeoutSeconds === undefined) {
-    return DEFAULT_IDLE_TIMEOUT_SECONDS;
-  }
-
-  const idleTimeoutSeconds = Number(rawIdleTimeoutSeconds);
-  if (!Number.isInteger(idleTimeoutSeconds) || idleTimeoutSeconds <= 0) {
-    throw new TypeError(
-      `${PLAYWRIGHT_SERVER_IDLE_TIMEOUT_ENV_VAR_NAME} must be a positive integer, got "${rawIdleTimeoutSeconds}"`,
-    );
-  }
-
-  return idleTimeoutSeconds;
 }
 
 /** Tags the image by its content, so changing the image files builds and runs a new container. */

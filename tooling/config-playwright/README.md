@@ -27,7 +27,7 @@ The first run on a machine builds the image `patricktree-stack/playwright-server
 
 The container name is derived from the image tag. Docker rejects a second container with the same name, so runs that start at the same time end up with one container. The server listens on a port the operating system assigns, and each run reads it from the container logs.
 
-Test runs never stop the container. It stops itself once no client has been connected for 10 minutes, and `--rm` removes it. A different idle timeout can be set with `PLAYWRIGHT_SERVER_IDLE_TIMEOUT_SECONDS`; the run that starts the container sets it for every run that shares it.
+Test runs never stop the container. It stops itself once no client has been connected for 10 minutes, and `--rm` removes it.
 
 The containers carry the label `patricktree-stack.playwright-server.version=<version>`. List or remove all of them:
 
