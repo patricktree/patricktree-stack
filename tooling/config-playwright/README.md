@@ -17,34 +17,23 @@ export default defineConfig({
 });
 ```
 
-The first run on a machine builds the image `patricktree-stack/playwright-server:v<version>` for the installed Playwright version. Later runs reuse it. Set `PWDEBUG=1` to run headed browsers on the host instead of in Docker.
+The configuration sets `globalSetup` to attach the run to the Playwright Server. A package that needs its own global setup must pass both, for example as an array. Set `PWDEBUG=1` to run headed browsers on the host instead of in Docker.
 
-## Target the container of one test run
+## Shared Playwright Server container
 
-Several test runs, for example from parallel agent sessions, can run Playwright Server containers from the same image at the same time. Never stop containers by image (`docker ps --filter ancestor=...`), because that also stops the servers of other runs.
+All test runs on a machine that use the same Playwright version share one Playwright Server container. Global setup attaches a run to that container and starts it when none is running. Each worker connects to it and gets its own browser, so concurrent runs stay isolated.
 
-Each container carries two labels:
+The first run on a machine builds the image `patricktree-stack/playwright-server:v<version>-<hash>` from [`playwright-server-image`](playwright-server-image/). The hash covers the image files, so changing them builds a new image. Later runs reuse the image.
 
-- `patricktree-stack.playwright-server=<run id>` identifies one test run. The id is a random UUID per configuration load, exported as `PLAYWRIGHT_SERVER_RUN_ID`.
-- `patricktree-stack.playwright-server.directory=<directory>` holds the working directory the test run started in, usually the consuming package.
+The container name is derived from the image tag. Docker rejects a second container with the same name, so runs that start at the same time end up with one container. The server listens on a port the operating system assigns, and each run reads it from the container logs.
 
-To know the run id in advance, set it when starting the run:
+Test runs never stop the container. It stops itself once no client has been connected for 10 minutes, and `--rm` removes it. A different idle timeout can be set with `PLAYWRIGHT_SERVER_IDLE_TIMEOUT_SECONDS`; the run that starts the container sets it for every run that shares it.
 
-```sh
-PLAYWRIGHT_SERVER_RUN_ID=my-run pnpm exec playwright test
-```
-
-List and stop the containers of that run:
+The containers carry the label `patricktree-stack.playwright-server.version=<version>`. List or remove all of them:
 
 ```sh
-docker ps --filter label=patricktree-stack.playwright-server=my-run
-docker stop $(docker ps --quiet --filter label=patricktree-stack.playwright-server=my-run)
+docker ps --filter label=patricktree-stack.playwright-server.version
+docker rm --force $(docker ps --quiet --filter label=patricktree-stack.playwright-server.version)
 ```
 
-Without a preset id, list the containers started from one package and read the run id from the labels:
-
-```sh
-docker ps --filter "label=patricktree-stack.playwright-server.directory=$PWD" --format '{{.ID}} {{.Label "patricktree-stack.playwright-server"}} {{.RunningFor}}'
-```
-
-Playwright stops the container with `SIGTERM` when the test run ends, and `--rm` removes it afterwards. Stop a container manually only when its test run is gone.
+Removing a container fails the test runs that are using it.

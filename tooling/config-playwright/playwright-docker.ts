@@ -1,24 +1,17 @@
 // See https://patricktree.me/blog/consistent-visual-assertions-via-playwright-server-in-docker for the rationale behind running Playwright Server in Docker.
 import type { PlaywrightTestConfig } from "@playwright/test";
-import crypto from "node:crypto";
-import module from "node:module";
 import os from "node:os";
+import path from "node:path";
 
-const PLAYWRIGHT_SERVER_PORT_ENV_VAR_NAME = "PLAYWRIGHT_SERVER_PORT";
+import { PLAYWRIGHT_SERVER_PORT_ENV_VAR_NAME } from "./playwright-server-global-setup.ts";
+
 const DEFAULT_MAX_WORKERS = 4;
-const PLAYWRIGHT_SERVER_RUN_ID_ENV_VAR_NAME = "PLAYWRIGHT_SERVER_RUN_ID";
+const PLAYWRIGHT_SERVER_GLOBAL_SETUP_PATH = path.join(
+  import.meta.dirname,
+  "playwright-server-global-setup.ts",
+);
 
-export const PLAYWRIGHT_SERVER_RUN_LABEL = "patricktree-stack.playwright-server";
-export const PLAYWRIGHT_SERVER_DIRECTORY_LABEL = "patricktree-stack.playwright-server.directory";
-
-/**
- * Labels the Playwright Server container of this test run, so cleanup can target it with `docker ps
- * --filter label=patricktree-stack.playwright-server=<id>` without touching the servers of
- * concurrent runs. Set PLAYWRIGHT_SERVER_RUN_ID to know the id before the run starts.
- */
-export const PLAYWRIGHT_SERVER_RUN_ID =
-  // oxlint-disable-next-line node/no-process-env -- Lets a caller pick the id it later filters containers by.
-  process.env[PLAYWRIGHT_SERVER_RUN_ID_ENV_VAR_NAME] ?? crypto.randomUUID();
+export { PLAYWRIGHT_SERVER_VERSION_LABEL } from "./playwright-server-global-setup.ts";
 
 export type CreatePlaywrightDockerConfigOptions = {
   isCI?: boolean;
@@ -35,8 +28,6 @@ export function createPlaywrightDockerConfig({
   maxWorkers = DEFAULT_MAX_WORKERS,
   shouldUseDocker = !isDebuggingSession,
 }: CreatePlaywrightDockerConfigOptions = {}): PlaywrightTestConfig {
-  const playwrightVersion = readInstalledPlaywrightVersion();
-
   return {
     fullyParallel: true,
 
@@ -49,90 +40,21 @@ export function createPlaywrightDockerConfig({
 
     snapshotPathTemplate: `{testDir}/../snapshots/{testFilePath}/{arg}-{projectName}-${shouldUseDocker ? "docker" : "{platform}"}{ext}`,
 
-    use: {
-      ...(shouldUseDocker
-        ? {
+    ...(shouldUseDocker
+      ? {
+          // Attaches the run to the Playwright Server container that all test runs of this Playwright
+          // version share, starting it when none is running. The container stops itself once idle,
+          // so there is no global teardown.
+          globalSetup: PLAYWRIGHT_SERVER_GLOBAL_SETUP_PATH,
+          use: {
             connectOptions: {
               wsEndpoint: `ws://127.0.0.1:${
-                // oxlint-disable-next-line node/no-process-env -- Port is provided by Playwright server stdout via webServer.wait.stdout.
+                // oxlint-disable-next-line node/no-process-env -- Global setup passes the port to the workers through the environment.
                 process.env[PLAYWRIGHT_SERVER_PORT_ENV_VAR_NAME] ?? ""
               }/`,
             },
-          }
-        : {}),
-    },
-
-    ...(shouldUseDocker
-      ? {
-          webServer: {
-            // Start Playwright Server in a Docker container so visual assertions are consistent across host operating systems.
-            command: createPlaywrightServerCommand(playwrightVersion),
-            wait: {
-              // Capture the Playwright Server port from stdout via regex (https://playwright.dev/docs/api/class-testconfig#test-config-web-server).
-              // eslint-disable-next-line prefer-regex-literals -- Named capture group is interpolated from the environment variable name.
-              stdout: new RegExp(
-                String.raw`Listening on ws:\/\/0\.0\.0\.0:(?<${PLAYWRIGHT_SERVER_PORT_ENV_VAR_NAME}>\d+)`,
-              ),
-            },
-            stdout: "pipe",
-            stderr: "pipe",
-            // The first run on a machine builds the server image, which installs Playwright from npm.
-            timeout: 120_000,
-            gracefulShutdown: {
-              signal: "SIGTERM",
-              timeout: 10_000,
-            },
-            // Test runs execute concurrently across checkouts, so each run starts its own Playwright Server rather than attaching to another run's.
-            reuseExistingServer: false,
           },
         }
       : {}),
   };
-}
-
-/**
- * Installing Playwright with `npx` on every start took longer than the startup timeout, and longer
- * still when several test runs started at once. The derived image installs it once per version;
- * later runs reuse the local image and start in about a second.
- */
-function createPlaywrightServerCommand(playwrightVersion: string): string {
-  const baseImage = `mcr.microsoft.com/playwright:v${playwrightVersion}-noble`;
-  const serverImage = `patricktree-stack/playwright-server:v${playwrightVersion}`;
-  const dockerfileLines = [
-    `FROM ${baseImage}`,
-    "WORKDIR /opt/playwright-server",
-    `RUN npm install --no-audit --no-fund playwright@${playwrightVersion}`,
-  ];
-  const buildServerImage = `printf '%s\\n' ${dockerfileLines.map((line) => `'${line}'`).join(" ")} | docker build --quiet --tag ${serverImage} -`;
-
-  // Concurrent first runs may each build the image; the builds are identical, so either result serves.
-  return [
-    `{ docker image inspect ${serverImage} >/dev/null 2>&1 || ${buildServerImage}; }`,
-    [
-      "docker run --rm --init --user pwuser --network host",
-      `--label ${quoteShellArgument(`${PLAYWRIGHT_SERVER_RUN_LABEL}=${PLAYWRIGHT_SERVER_RUN_ID}`)}`,
-      `--label ${quoteShellArgument(`${PLAYWRIGHT_SERVER_DIRECTORY_LABEL}=${process.cwd()}`)}`,
-      `${serverImage} ./node_modules/.bin/playwright run-server --host 0.0.0.0`,
-    ].join(" "),
-  ].join(" && ");
-}
-
-function quoteShellArgument(argument: string): string {
-  return `'${argument.replaceAll("'", String.raw`'\''`)}'`;
-}
-
-function readInstalledPlaywrightVersion(): string {
-  const require = module.createRequire(import.meta.url);
-  const packageJson: unknown = require("@playwright/test/package.json");
-
-  if (
-    typeof packageJson !== "object" ||
-    packageJson === null ||
-    !("version" in packageJson) ||
-    typeof packageJson.version !== "string"
-  ) {
-    throw new TypeError("@playwright/test/package.json must contain a string version");
-  }
-
-  return packageJson.version;
 }
