@@ -10,15 +10,18 @@ import timers from "node:timers/promises";
 import util from "node:util";
 
 export const PLAYWRIGHT_SERVER_PORT_ENV_VAR_NAME = "PLAYWRIGHT_SERVER_PORT";
-export const PLAYWRIGHT_SERVER_VERSION_LABEL = "patricktree-stack.playwright-server.version";
-
+const PLAYWRIGHT_SERVER_VERSION_LABEL = "patricktree-stack.playwright-server.version";
 const PLAYWRIGHT_SERVER_IDLE_TIMEOUT_ENV_VAR_NAME = "PLAYWRIGHT_SERVER_IDLE_TIMEOUT_SECONDS";
 const DEFAULT_IDLE_TIMEOUT_SECONDS = 600;
 // The first run on a machine builds the server image, which installs Playwright from npm.
 const STARTUP_TIMEOUT_MS = 120_000;
+// Bounds each Docker call other than the image build, so an unresponsive Docker daemon cannot block the run.
+const DOCKER_COMMAND_TIMEOUT_MS = 15_000;
 const RETRY_DELAY_MS = 500;
 const IMAGE_DIRECTORY = path.join(import.meta.dirname, "playwright-server-image");
 const IMAGE_FILE_NAMES = ["Dockerfile", "serve.sh"];
+// Must match the activity marker in `serve.sh`, whose idle timer this file resets.
+const ACTIVITY_MARKER_PATH = "/tmp/last-used";
 
 const execFile = util.promisify(childProcess.execFile);
 
@@ -31,27 +34,34 @@ export default async function globalSetup(): Promise<void> {
 }
 
 async function ensurePlaywrightServer(): Promise<number> {
+  const deadline = Date.now() + STARTUP_TIMEOUT_MS;
   const playwrightVersion = readInstalledPlaywrightVersion();
-  const imageHash = hashImageFiles();
-  const image = `patricktree-stack/playwright-server:v${playwrightVersion}-${imageHash}`;
+  // The image files hash is part of both names, so changing the image files never attaches a run to
+  // a container of the previous image.
+  const imageVersion = `v${playwrightVersion}-${hashImageFiles()}`;
+  const image = `patricktree-stack/playwright-server:${imageVersion}`;
   // Docker rejects a second container with the same name, so the name is the lock that keeps
   // concurrently starting test runs from creating more than one container per version.
-  const containerName = `patricktree-stack-playwright-server-v${playwrightVersion}-${imageHash}`;
+  const containerName = `patricktree-stack-playwright-server-${imageVersion}`;
 
-  await ensureImage(image, playwrightVersion);
+  await ensureImage({ image, playwrightVersion, deadline });
 
-  const deadline = Date.now() + STARTUP_TIMEOUT_MS;
+  let lastError: unknown;
   while (Date.now() < deadline) {
-    await startContainer({ containerName, image, playwrightVersion });
+    try {
+      await startContainer({ containerName, image, playwrightVersion });
 
-    // The container may be stopping because it was idle; the next iteration then starts a new one.
-    const port = await readListeningPort(containerName);
-    if (
-      port !== undefined &&
-      (await markContainerAsUsed(containerName)) &&
-      (await canConnect(port))
-    ) {
-      return port;
+      // The container may be stopping because it was idle; the next iteration then starts a new one.
+      const port = await readListeningPort(containerName);
+      if (port !== undefined) {
+        await runDocker(["exec", containerName, "touch", ACTIVITY_MARKER_PATH]);
+
+        if (await canConnect(port)) {
+          return port;
+        }
+      }
+    } catch (error) {
+      lastError = error;
     }
 
     await timers.setTimeout(RETRY_DELAY_MS);
@@ -59,27 +69,46 @@ async function ensurePlaywrightServer(): Promise<number> {
 
   throw new Error(
     `Playwright Server container "${containerName}" did not become ready within ${STARTUP_TIMEOUT_MS} ms. Inspect it with \`docker logs ${containerName}\`.`,
+    { cause: lastError },
   );
 }
 
-async function ensureImage(image: string, playwrightVersion: string): Promise<void> {
+async function ensureImage({
+  image,
+  playwrightVersion,
+  deadline,
+}: {
+  image: string;
+  playwrightVersion: string;
+  deadline: number;
+}): Promise<void> {
   try {
-    await execFile("docker", ["image", "inspect", image]);
+    await runDocker(["image", "inspect", image]);
     return;
   } catch {
-    // The image does not exist yet (or Docker is unavailable, which the build below reports).
+    // The image does not exist yet, or Docker is unavailable, which the build below reports.
   }
 
   // Concurrent first runs may each build the image; the builds are identical, so either result serves.
-  await execFile("docker", [
-    "build",
-    "--quiet",
-    "--build-arg",
-    `PLAYWRIGHT_VERSION=${playwrightVersion}`,
-    "--tag",
-    image,
-    IMAGE_DIRECTORY,
-  ]);
+  try {
+    await runDocker(
+      [
+        "build",
+        "--quiet",
+        "--build-arg",
+        `PLAYWRIGHT_VERSION=${playwrightVersion}`,
+        "--tag",
+        image,
+        IMAGE_DIRECTORY,
+      ],
+      Math.max(deadline - Date.now(), 1),
+    );
+  } catch (error) {
+    throw new Error(
+      `Could not build the Playwright Server image "${image}". Docker must be installed and running.`,
+      { cause: error },
+    );
+  }
 }
 
 async function startContainer({
@@ -92,7 +121,7 @@ async function startContainer({
   playwrightVersion: string;
 }): Promise<void> {
   try {
-    await execFile("docker", [
+    await runDocker([
       "run",
       "--detach",
       "--rm",
@@ -106,7 +135,6 @@ async function startContainer({
       "--label",
       `${PLAYWRIGHT_SERVER_VERSION_LABEL}=${playwrightVersion}`,
       image,
-      "sh",
       "./serve.sh",
       String(readIdleTimeoutSeconds()),
     ]);
@@ -120,35 +148,29 @@ async function startContainer({
   }
 }
 
+/** Returns undefined while the container is not running or its server has not printed its port yet. */
 async function readListeningPort(containerName: string): Promise<number | undefined> {
-  try {
-    const { stdout: isRunning } = await execFile("docker", [
-      "inspect",
-      "--format",
-      "{{.State.Running}}",
-      containerName,
-    ]);
-    if (isRunning.trim() !== "true") {
-      return undefined;
-    }
-
-    const { stdout: logs } = await execFile("docker", ["logs", containerName]);
-    const match = /Listening on ws:\/\/0\.0\.0\.0:(?<port>\d+)/.exec(logs);
-    return match?.groups?.["port"] === undefined ? undefined : Number(match.groups["port"]);
-  } catch {
-    // The container was removed between the calls.
+  const { stdout: runningState } = await runDocker([
+    "inspect",
+    "--format",
+    "{{.State.Running}}",
+    containerName,
+  ]);
+  if (runningState.trim() !== "true") {
     return undefined;
   }
+
+  // `serve.sh` forwards the server output, including this line, to the container logs.
+  const { stdout: logs } = await runDocker(["logs", containerName]);
+  const port = /Listening on ws:\/\/0\.0\.0\.0:(?<port>\d+)/.exec(logs)?.groups?.["port"];
+  return port === undefined ? undefined : Number(port);
 }
 
-/** Resets the idle timer of `serve.sh` in the container, see the activity marker there. */
-async function markContainerAsUsed(containerName: string): Promise<boolean> {
-  try {
-    await execFile("docker", ["exec", containerName, "touch", "/tmp/last-used"]);
-    return true;
-  } catch {
-    return false;
-  }
+function runDocker(
+  args: string[],
+  timeoutMs = DOCKER_COMMAND_TIMEOUT_MS,
+): Promise<{ stdout: string; stderr: string }> {
+  return execFile("docker", args, { timeout: timeoutMs });
 }
 
 function canConnect(port: number): Promise<boolean> {

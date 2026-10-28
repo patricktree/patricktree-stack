@@ -7,8 +7,9 @@
 set -eu
 
 idle_timeout_seconds="${1}"
-# Test runs touch this file via `docker exec` when they pick this container, so it is not stopped
-# between that moment and the run's first browser connection.
+# Test runs touch this file via `docker exec` (see `ACTIVITY_MARKER_PATH` in the global setup) when
+# they pick this container, so it is not stopped between that moment and the run's first browser
+# connection.
 activity_marker=/tmp/last-used
 log_file=/tmp/run-server.log
 poll_interval_seconds=10

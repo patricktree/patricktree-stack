@@ -11,8 +11,6 @@ const PLAYWRIGHT_SERVER_GLOBAL_SETUP_PATH = path.join(
   "playwright-server-global-setup.ts",
 );
 
-export { PLAYWRIGHT_SERVER_VERSION_LABEL } from "./playwright-server-global-setup.ts";
-
 export type CreatePlaywrightDockerConfigOptions = {
   isCI?: boolean;
   isDebuggingSession?: boolean;
