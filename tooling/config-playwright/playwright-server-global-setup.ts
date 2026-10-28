@@ -11,8 +11,11 @@ import util from "node:util";
 
 export const PLAYWRIGHT_SERVER_PORT_ENV_VAR_NAME = "PLAYWRIGHT_SERVER_PORT";
 const PLAYWRIGHT_SERVER_VERSION_LABEL = "patricktree-stack.playwright-server.version";
-// The first run on a machine builds the server image, which installs Playwright from npm.
-const STARTUP_TIMEOUT_MS = 120_000;
+// The first run on a machine builds the server image, which pulls the Playwright base image and
+// installs Playwright from npm.
+const IMAGE_BUILD_TIMEOUT_MS = 300_000;
+// Starting a container and connecting takes about two seconds; the margin covers a busy machine.
+const STARTUP_TIMEOUT_MS = 30_000;
 // Bounds each Docker call other than the image build, so an unresponsive Docker daemon cannot block the run.
 const DOCKER_COMMAND_TIMEOUT_MS = 15_000;
 const RETRY_DELAY_MS = 500;
@@ -50,7 +53,6 @@ export default async function globalSetup(): Promise<() => void> {
 }
 
 async function ensurePlaywrightServer(): Promise<{ containerName: string; port: number }> {
-  const deadline = Date.now() + STARTUP_TIMEOUT_MS;
   const playwrightVersion = readInstalledPlaywrightVersion();
   // The image files hash is part of both names, so changing the image files never attaches a run to
   // a container of the previous image.
@@ -60,7 +62,9 @@ async function ensurePlaywrightServer(): Promise<{ containerName: string; port: 
   // concurrently starting test runs from creating more than one container per version.
   const containerName = `patricktree-stack-playwright-server-${imageVersion}`;
 
-  await ensureImage({ image, playwrightVersion, deadline });
+  await ensureImage(image, playwrightVersion);
+
+  const deadline = Date.now() + STARTUP_TIMEOUT_MS;
 
   let lastError: unknown;
   while (Date.now() < deadline) {
@@ -97,15 +101,7 @@ async function ensurePlaywrightServer(): Promise<{ containerName: string; port: 
   );
 }
 
-async function ensureImage({
-  image,
-  playwrightVersion,
-  deadline,
-}: {
-  image: string;
-  playwrightVersion: string;
-  deadline: number;
-}): Promise<void> {
+async function ensureImage(image: string, playwrightVersion: string): Promise<void> {
   try {
     await runDocker(["image", "inspect", image]);
     return;
@@ -125,7 +121,7 @@ async function ensureImage({
         image,
         IMAGE_DIRECTORY,
       ],
-      Math.max(deadline - Date.now(), 1),
+      IMAGE_BUILD_TIMEOUT_MS,
     );
   } catch (error) {
     throw new Error(
