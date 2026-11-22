@@ -3,7 +3,7 @@ import childProcess from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { test } from "vitest";
+import { afterAll, beforeAll, test } from "vitest";
 import type { TestContext } from "vitest";
 
 import { runCli } from "#src/cli.ts";
@@ -23,33 +23,67 @@ function git(cwd: string, ...args: string[]) {
   return childProcess.execFileSync("git", args, { cwd, env: ENVIRONMENT, encoding: "utf8" }).trim();
 }
 
-/**
- * Creates a superproject with a submodule `stack` whose history is `old` <- `middle` <- `new`, and
- * whose initial commit records `old`.
- */
-async function fixture(t: TestContext) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "submodule-check-"));
-  t.onTestFinished(() => fs.rm(root, { recursive: true, force: true }));
+type SubmoduleCommits = Record<"old" | "middle" | "new", string>;
 
+/*
+ * Each test copies one superproject built in `beforeAll` instead of building its own, which saves
+ * it about a dozen git processes: with them, tests ran past their timeout on a loaded Mac.
+ */
+let template: { root: string; commits: SubmoduleCommits } | undefined;
+
+beforeAll(async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "submodule-check-template-"));
+  template = { root, commits: await createSuperproject(root) };
+});
+
+afterAll(async () => {
+  if (template !== undefined) {
+    await fs.rm(template.root, { recursive: true, force: true });
+  }
+});
+
+/**
+ * Builds a superproject in `root` with a submodule `stack` whose history is `old` <- `middle` <-
+ * `new`, and whose initial commit records `old`.
+ */
+async function createSuperproject(root: string): Promise<SubmoduleCommits> {
   const stack = path.join(root, "stack");
   await fs.mkdir(stack);
   git(stack, "init", "--quiet", "--initial-branch=main");
-  const submoduleCommits: Record<"old" | "middle" | "new", string> = {
-    old: "",
-    middle: "",
-    new: "",
-  };
+  disableAutoMaintenance(stack);
+  const commits: SubmoduleCommits = { old: "", middle: "", new: "" };
   for (const name of ["old", "middle", "new"] as const) {
     git(stack, "commit", "--quiet", "--allow-empty", "--message", name);
-    submoduleCommits[name] = git(stack, "rev-parse", "HEAD");
+    commits[name] = git(stack, "rev-parse", "HEAD");
   }
 
   git(root, "init", "--quiet", "--initial-branch=main");
+  disableAutoMaintenance(root);
   await fs.writeFile(
     path.join(root, ".gitmodules"),
     '[submodule "stack"]\n\tpath = stack\n\turl = https://example.com/stack\n',
   );
   git(root, "add", ".gitmodules");
+  git(root, "update-index", "--add", "--cacheinfo", `160000,${commits.old},stack`);
+  git(root, "commit", "--quiet", "--allow-empty", "--message", "initial");
+  return commits;
+}
+
+/**
+ * Stops `git commit` and `git merge` in the repository at `cwd` from starting and waiting for `git
+ * maintenance run --auto`, one more git process per commit that the tests do not need.
+ */
+function disableAutoMaintenance(cwd: string) {
+  git(cwd, "config", "maintenance.auto", "false");
+}
+
+/** Copies the superproject that `createSuperproject` describes into a directory of the test's own. */
+async function fixture(t: TestContext) {
+  assert.ok(template !== undefined, "beforeAll builds the template superproject.");
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "submodule-check-"));
+  t.onTestFinished(() => fs.rm(root, { recursive: true, force: true }));
+  await fs.cp(template.root, root, { recursive: true });
+  const submoduleCommits = template.commits;
 
   const repository = {
     root,
@@ -77,8 +111,6 @@ async function fixture(t: TestContext) {
       return { status, stdout: stdout.join("\n"), stderr: stderr.join("\n") };
     },
   };
-  repository.stage("old");
-  repository.commit("initial");
   return repository;
 }
 
