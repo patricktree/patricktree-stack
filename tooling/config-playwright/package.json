@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./playwright-docker": "./playwright-docker.ts"
+    "./playwright-docker": "./playwright-docker.ts",
+    "./playwright-server-image": "./playwright-server-image.ts"
   },
   "dependencies": {
     "@playwright/test": "catalog:"
