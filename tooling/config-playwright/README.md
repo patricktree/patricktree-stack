@@ -23,7 +23,7 @@ The configuration sets `globalSetup` to attach the run to the Playwright Server.
 
 All test runs on a machine that use the same Playwright version share one Playwright Server container. Global setup attaches a run to that container and starts it when none is running. Each worker connects to it and gets its own browser, so concurrent runs stay isolated.
 
-The first run on a machine builds the image `patricktree-stack/playwright-server:v<version>-<hash>` from [`playwright-server-image`](playwright-server-image/). The hash covers the image files, so changing them builds a new image. Later runs reuse the image.
+The first run on a machine builds the image `patricktree-stack/playwright-server:v<version>-<hash>` from [`playwright-server-image`](playwright-server-image/) ([derivation](#playwright-server-image)). The hash covers the image files, so changing them builds a new image. Later runs reuse the image.
 
 The container name is derived from the image tag. Docker rejects a second container with the same name, so runs that start at the same time end up with one container. The server listens on a port the operating system assigns, and each run reads it from the container logs. On Docker Desktop that port is assigned in the Linux VM, so a host process can already hold it; global setup then removes the container and starts a new one on another port.
 
@@ -37,3 +37,20 @@ docker rm --force $(docker ps --quiet --filter label=patricktree-stack.playwrigh
 ```
 
 Removing a container fails the test runs that are using it.
+
+## Playwright Server image
+
+The `playwright-server-image` export derives and builds the image that global setup runs, for tooling that keys or prepares it, such as a cache key that must change when the image changes:
+
+```ts
+import {
+  buildPlaywrightServerImage,
+  derivePlaywrightServerImage,
+} from "@patricktree-stack/config-playwright/playwright-server-image";
+
+const image = derivePlaywrightServerImage();
+// image.tag is "patricktree-stack/playwright-server:v<version>-<hash>"
+await buildPlaywrightServerImage(image);
+```
+
+`derivePlaywrightServerImage` returns the Playwright version this package resolves, the image's build context, its tag and the tag of the base image the Dockerfile builds on. `buildPlaywrightServerImage` runs `docker build` with a five-minute timeout and builds the image even when it exists. Global setup uses both, so tooling that imports them keys and builds the same image the test runs use.
